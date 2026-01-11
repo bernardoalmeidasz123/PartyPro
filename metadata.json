@@ -1,4 +1,5 @@
 {
-  "name": "PlanParty Atelier",
-  "description": "Sistema de Gestão de Festas Elite. Agenda Professional 2026-2030 e Gerenciamento de Lucros."
+  "name": "PlanParty Atelier Elite",
+  "description": "Sistema de Gestão de Festas 2026-2030",
+  "requestFramePermissions": []
 }
