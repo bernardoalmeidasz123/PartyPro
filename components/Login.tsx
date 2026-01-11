@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Logo from './Logo';
 
@@ -88,7 +87,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRequest, onSupplierAccess 
 
       {/* Login Side */}
       <div className="md:w-1/2 flex items-center justify-center p-8 lg:p-16">
-        <div className="w-full max-w-sm space-y-8">
+        <div className="w-full max-w-sm space-y-12">
           <div className="text-center md:text-left">
             <h3 className="text-3xl font-bold text-slate-800 font-display">Bem-vindo ao Atelier</h3>
             <p className="text-slate-400 text-sm mt-3">Acesse sua agenda de festas profissional.</p>
@@ -127,35 +126,22 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRequest, onSupplierAccess 
             </button>
           </form>
 
-          <div className="relative py-2">
+          <div className="relative py-4">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100"></span></div>
-            <div className="relative flex justify-center text-[10px] uppercase"><span className="bg-[#fdfcfb] px-4 text-slate-300 font-black tracking-[0.3em]">Upgrade</span></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#fdfcfb] px-4 text-slate-300 font-bold tracking-widest">OU</span></div>
           </div>
 
-          <div className="space-y-3">
-            <a 
-              href="https://pay.sunize.com.br/IwRuxnWY" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-900 to-emerald-800 text-white font-bold shadow-2xl flex flex-col items-center justify-center gap-1 hover:scale-[1.02] transition-transform border border-champagne/20"
-            >
-              <span className="text-xs uppercase tracking-[0.2em] text-champagne">Adquirir Acesso Elite Vitalício</span>
-              <span className="text-xl font-display">Apenas R$ 100,89</span>
-            </a>
+          <button 
+            onClick={onSupplierAccess}
+            className="w-full py-4 rounded-2xl bg-white border border-emerald-100 text-emerald-900 font-bold text-xs uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
+          >
+            Portal do Fornecedor Convidado
+          </button>
 
-            <button 
-              onClick={onSupplierAccess}
-              className="w-full py-4 rounded-2xl bg-white border border-emerald-100 text-emerald-900 font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
-            >
-              Portal do Fornecedor Convidado
-            </button>
-            
-            <button 
-              onClick={onGoToRequest}
-              className="w-full py-4 rounded-2xl bg-slate-50 border border-slate-100 text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-slate-100 hover:text-emerald-800 transition-all"
-            >
-              Confirmar Compra / Ativar Acesso
-            </button>
+          <div className="text-center">
+            <p className="text-slate-400 text-xs">
+              Ainda não possui acesso? <button onClick={onGoToRequest} className="text-emerald-700 font-bold hover:underline">Solicitar aprovação manual</button>
+            </p>
           </div>
         </div>
       </div>

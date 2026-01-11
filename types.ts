@@ -41,6 +41,7 @@ export interface AccessRequest {
   timestamp: number;
   status: 'Pendente' | 'Aprovado' | 'Rejeitado';
   proofName: string;
+  proofData?: string; // Armazena a imagem em Base64
 }
 
 export type ViewType = 'dashboard' | 'calendar' | 'events' | 'suppliers' | 'ai-helper' | 'approvals';

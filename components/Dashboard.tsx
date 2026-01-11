@@ -61,7 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events }) => {
                     <Tooltip 
                       cursor={{fill: '#f8fafc'}}
                       contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
-                      formatter={(value: any) => [`R$ ${Number(value).toLocaleString('pt-BR')}`, 'Lucro']} 
+                      formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Lucro']} 
                     />
                     <Bar dataKey="lucro" fill="#022c22" radius={[15, 15, 15, 15]} barSize={40} />
                   </BarChart>

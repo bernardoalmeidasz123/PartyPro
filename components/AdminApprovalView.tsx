@@ -10,15 +10,44 @@ interface AdminApprovalViewProps {
 
 const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onApprove, onReject }) => {
   const [filter, setFilter] = useState<'Pendente' | 'Aprovado' | 'Rejeitado'>('Pendente');
+  const [viewingProof, setViewingProof] = useState<string | null>(null);
 
   const filteredRequests = requests.filter(r => r.status === filter);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
+      {/* Modal de Visualização */}
+      {viewingProof && (
+        <div 
+          className="fixed inset-0 z-[100] bg-emerald-950/90 backdrop-blur-xl flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300"
+          onClick={() => setViewingProof(null)}
+        >
+          <div className="relative max-w-4xl w-full bg-white rounded-[40px] overflow-hidden shadow-2xl animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setViewingProof(null)}
+              className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-emerald-50 text-emerald-950 rounded-full flex items-center justify-center font-bold text-xl transition-all z-10"
+            >
+              ✕
+            </button>
+            <div className="p-10 overflow-y-auto max-h-[85vh] flex flex-col items-center">
+              <h4 className="text-xl font-display text-emerald-950 mb-6">Comprovante de Pagamento</h4>
+              {viewingProof.startsWith('data:application/pdf') ? (
+                <div className="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center rounded-3xl">
+                  <p className="text-slate-500 font-bold">Documento PDF (Visualização indisponível em Base64 direto)</p>
+                  <a href={viewingProof} download="comprovante.pdf" className="ml-4 text-emerald-600 underline">Baixar PDF</a>
+                </div>
+              ) : (
+                <img src={viewingProof} alt="Proof" className="w-full h-auto rounded-3xl shadow-lg border border-slate-100" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-display text-emerald-950">Gestão de Acessos</h2>
-          <p className="text-slate-500 text-sm">Aprovação manual de membros via e-mail e comprovante Sunize.</p>
+          <p className="text-slate-500 text-sm">Analise os comprovantes e libere os membros Elite.</p>
         </div>
         <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex shadow-sm">
           {(['Pendente', 'Aprovado', 'Rejeitado'] as const).map((f) => (
@@ -54,10 +83,15 @@ const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onAppro
               </div>
 
               <div className="flex items-center gap-6">
-                <div className="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 flex items-center gap-2">
-                  <span className="text-emerald-600 font-bold text-xs uppercase">Comprovante:</span>
-                  <span className="text-emerald-900 font-bold text-[11px] truncate max-w-[150px]">{req.proofName}</span>
-                </div>
+                <button 
+                  onClick={() => req.proofData && setViewingProof(req.proofData)}
+                  className={`px-4 py-2 rounded-xl border flex items-center gap-2 transition-all ${
+                    req.proofData ? 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100' : 'bg-slate-50 border-slate-100 text-slate-400'
+                  }`}
+                >
+                  <span className="text-xs font-bold uppercase">Ver Imagem</span>
+                  <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border border-current">👁️</span>
+                </button>
                 
                 {req.status === 'Pendente' && (
                   <div className="flex gap-2">
@@ -77,31 +111,10 @@ const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onAppro
                     )}
                   </div>
                 )}
-                
-                {req.status === 'Aprovado' && (
-                  <span className="bg-green-100 text-green-700 px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest border border-green-200">
-                    Membro Ativo ✅
-                  </span>
-                )}
-
-                {req.status === 'Rejeitado' && (
-                  <span className="bg-red-50 text-red-500 px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest border border-red-100">
-                    Rejeitado ❌
-                  </span>
-                )}
               </div>
             </div>
           ))
         )}
-      </div>
-
-      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Instruções Admin</h4>
-        <ul className="text-xs text-slate-500 space-y-1 list-disc list-inside">
-          <li>Verifique se o e-mail da solicitação coincide com o e-mail da compra na Sunize.</li>
-          <li>Confirme se o arquivo anexado é um comprovante de pagamento válido.</li>
-          <li>Ao aprovar, o sistema enviará as credenciais automáticas baseadas no e-mail.</li>
-        </ul>
       </div>
     </div>
   );

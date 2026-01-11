@@ -13,26 +13,44 @@ const RequestAccessView: React.FC<RequestAccessViewProps> = ({ onBack, onSubmit 
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !file) {
-      alert("Por favor, preencha o e-mail e anexe o comprovante PDF.");
+      alert("Por favor, preencha o e-mail e anexe o comprovante.");
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const base64Data = await fileToBase64(file);
+      
       const newRequest: AccessRequest = {
         id: Math.random().toString(36).substr(2, 9),
         email: email.toLowerCase().trim(),
         timestamp: Date.now(),
         status: 'Pendente',
-        proofName: file.name
+        proofName: file.name,
+        proofData: base64Data
       };
+      
+      setTimeout(() => {
+        setLoading(false);
+        alert("Solicitação enviada! O administrador Bernardo irá analisar seu comprovante e liberar seu acesso em breve.");
+        onSubmit(newRequest);
+      }, 1000);
+    } catch (err) {
+      alert("Erro ao processar o arquivo. Tente novamente.");
       setLoading(false);
-      alert("Solicitação enviada! O administrador Bernardo irá analisar seu comprovante e liberar seu acesso em breve.");
-      onSubmit(newRequest);
-    }, 1500);
+    }
   };
 
   return (
@@ -41,7 +59,7 @@ const RequestAccessView: React.FC<RequestAccessViewProps> = ({ onBack, onSubmit 
         <div className="text-center">
           <Logo className="w-16 h-16 mx-auto mb-4" />
           <h2 className="text-3xl font-display text-emerald-950">Solicitar Acesso</h2>
-          <p className="text-slate-400 text-sm mt-2">Para quem comprou via Sunize sem link direto.</p>
+          <p className="text-slate-400 text-sm mt-2">Envie seu comprovante para análise.</p>
         </div>
 
         <form onSubmit={handleFormSubmit} className="space-y-6">
@@ -58,19 +76,19 @@ const RequestAccessView: React.FC<RequestAccessViewProps> = ({ onBack, onSubmit 
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Anexar Comprovante (PDF/JPG)</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Anexar Comprovante (Imagem/PDF)</label>
             <div className="relative group">
               <input 
                 type="file" 
-                accept=".pdf,.jpg,.jpeg,.png"
+                accept="image/*,.pdf"
                 required
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={e => setFile(e.target.files?.[0] || null)}
               />
               <div className="w-full p-6 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center bg-slate-50 group-hover:bg-emerald-50 group-hover:border-emerald-200 transition-all">
-                <span className="text-3xl mb-2">📄</span>
-                <span className="text-xs font-bold text-slate-400">
-                  {file ? file.name : "Clique para selecionar o arquivo"}
+                <span className="text-3xl mb-2">📸</span>
+                <span className="text-xs font-bold text-slate-400 text-center">
+                  {file ? file.name : "Clique ou arraste o comprovante aqui"}
                 </span>
               </div>
             </div>
@@ -81,7 +99,7 @@ const RequestAccessView: React.FC<RequestAccessViewProps> = ({ onBack, onSubmit 
             disabled={loading}
             className="w-full py-4 rounded-2xl font-bold bg-emerald-950 text-white shadow-xl hover:bg-emerald-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
-            {loading ? "Enviando..." : "Enviar para Aprovação"}
+            {loading ? "Processando..." : "Enviar p/ Bernardo"}
           </button>
         </form>
 
