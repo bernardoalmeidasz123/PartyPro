@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Supplier } from '../types';
-import { generateAiInviteCode } from '../services/geminiService';
+import { generateInviteCode } from '../services/inviteService';
 
 interface SupplierListViewProps {
   suppliers: Supplier[];
@@ -18,12 +18,15 @@ const SupplierListView: React.FC<SupplierListViewProps> = ({ suppliers, setSuppl
     if (savedCode) setActiveCode(savedCode);
   }, []);
 
-  const handleGenerateCode = async () => {
+  const handleGenerateCode = () => {
     setIsGenerating(true);
-    const newCode = await generateAiInviteCode("PlanParty Atelier");
-    localStorage.setItem('planparty_supplier_invite_code', newCode);
-    setActiveCode(newCode);
-    setIsGenerating(false);
+    // Simula um delay de processamento para feedback visual
+    setTimeout(() => {
+      const newCode = generateInviteCode("PlanParty Atelier");
+      localStorage.setItem('planparty_supplier_invite_code', newCode);
+      setActiveCode(newCode);
+      setIsGenerating(false);
+    }, 500);
   };
 
   const copyLink = () => {
@@ -47,7 +50,7 @@ const SupplierListView: React.FC<SupplierListViewProps> = ({ suppliers, setSuppl
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-display text-emerald-950">Rede Profissional</h2>
-          <p className="text-slate-500 text-sm">Gerencie fornecedores e convites inteligentes.</p>
+          <p className="text-slate-500 text-sm">Gerencie fornecedores e convites de acesso.</p>
         </div>
         <div className="flex gap-3">
           <button 
@@ -57,7 +60,7 @@ const SupplierListView: React.FC<SupplierListViewProps> = ({ suppliers, setSuppl
               isGenerating ? 'bg-slate-100 text-slate-400' : 'bg-white border border-emerald-100 text-emerald-950 hover:bg-emerald-50'
             }`}
           >
-            {isGenerating ? "Gerando..." : "🤖 Gerar Código IA"}
+            {isGenerating ? "Gerando..." : "🔑 Gerar Código de Acesso"}
           </button>
           <button 
             onClick={copyLink}
@@ -71,10 +74,10 @@ const SupplierListView: React.FC<SupplierListViewProps> = ({ suppliers, setSuppl
       {activeCode && (
         <div className="bg-emerald-950 p-6 rounded-3xl text-white flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Código Ativo gerado por IA:</p>
+            <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Código Ativo:</p>
             <p className="text-2xl font-display text-champagne">{activeCode}</p>
           </div>
-          <p className="text-[10px] text-emerald-500 text-right max-w-[200px]">Os fornecedores precisarão deste código para acessar o formulário.</p>
+          <p className="text-[10px] text-emerald-500 text-right max-w-[200px]">Os fornecedores precisarão deste código para validar o cadastro.</p>
         </div>
       )}
 

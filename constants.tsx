@@ -8,7 +8,7 @@ export const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-export const YEARS = Array.from({ length: 15 }, (_, i) => 2026 + i); // 2026 to 2040
+export const YEARS = Array.from({ length: 5 }, (_, i) => 2026 + i); // 2026 to 2030
 
 export const STATUS_COLORS = {
   Pendente: 'bg-yellow-100 text-yellow-800',

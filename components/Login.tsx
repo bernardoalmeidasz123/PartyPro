@@ -115,7 +115,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRequest, onSupplierAccess 
                 type="email"
                 required
                 className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-champagne outline-none transition-all bg-white shadow-sm"
-                placeholder="Ex: szajnfarber@gmail.com"
+                placeholder="exemplo@gmail.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
@@ -154,7 +154,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRequest, onSupplierAccess 
              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto text-2xl">🤝</div>
              <div>
                 <h4 className="font-display text-xl text-emerald-950">Portal do Fornecedor</h4>
-                <p className="text-slate-400 text-[11px] mt-1 px-2">Foi convidado para um projeto? Entre com seu código IA para realizar o cadastro.</p>
+                <p className="text-slate-400 text-[11px] mt-1 px-2">Foi convidado para um projeto? Entre com seu código de acesso para realizar o cadastro.</p>
              </div>
              <button 
                 onClick={onSupplierAccess}
