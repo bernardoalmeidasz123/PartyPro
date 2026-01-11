@@ -164,6 +164,7 @@ const App: React.FC = () => {
             alert(`Bem-vindo, ${s.name}! Você está logado no Atelier.`);
             handleLogin(s.email);
           }}
+          onGoToRegistration={() => setAuthView('supplier-reg')}
         />
       );
     }
