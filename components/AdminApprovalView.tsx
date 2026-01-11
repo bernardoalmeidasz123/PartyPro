@@ -12,8 +12,16 @@ interface AdminApprovalViewProps {
 const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onApprove, onReject, onRevoke }) => {
   const [filter, setFilter] = useState<'Pendente' | 'Aprovado' | 'Rejeitado'>('Pendente');
   const [viewingRequest, setViewingRequest] = useState<AccessRequest | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const filteredRequests = requests.filter(r => r.status === filter);
+
+  const handleCopyCredentials = (req: AccessRequest) => {
+    const text = `Acesso PlanParty Atelier\nE-mail: ${req.email}\nSenha: ${req.generatedPassword}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(req.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleDownload = (data: string, filename: string) => {
     const link = document.createElement('a');
@@ -25,14 +33,15 @@ const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onAppro
   };
 
   const handleSendEmail = (req: AccessRequest) => {
-    const subject = encodeURIComponent("PlanParty Atelier - Seu Acesso Elite foi Ativado!");
+    const subject = encodeURIComponent("✨ Seu acesso exclusivo ao PlanParty Atelier chegou!");
     const body = encodeURIComponent(
-      `Olá!\n\nSeu pagamento foi confirmado e seu acesso vitalício ao PlanParty Atelier já está disponível.\n\n` +
-      `Acesse agora: ${window.location.origin}\n` +
-      `Seu login: ${req.email}\n` +
-      `Sua senha de acesso: ${req.generatedPassword}\n\n` +
-      `Seja bem-vindo(a) ao grupo exclusivo de decoradores de elite.\n\n` +
-      `Atenciosamente,\nBernardo Almeida`
+      `Olá!\n\nÉ um prazer ter você conosco no PlanParty Atelier. Seu pagamento foi validado com sucesso e sua licença vitalícia está ativa.\n\n` +
+      `Aqui estão seus dados para começar a planejar seus próximos sonhos:\n\n` +
+      `Link de Acesso: ${window.location.origin}\n` +
+      `Seu Login: ${req.email}\n` +
+      `Sua Senha Privada: ${req.generatedPassword}\n\n` +
+      `Qualquer dúvida, estou à disposição.\n\n` +
+      `Com carinho,\nBernardo Almeida`
     );
     window.location.href = `mailto:${req.email}?subject=${subject}&body=${body}`;
   };
@@ -45,76 +54,45 @@ const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onAppro
           className="fixed inset-0 z-[100] bg-emerald-950/98 backdrop-blur-3xl flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300"
           onClick={() => setViewingRequest(null)}
         >
-          <div className="relative max-w-6xl w-full bg-white rounded-[60px] overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[92vh]" onClick={e => e.stopPropagation()}>
+          <div className="relative max-w-4xl w-full bg-white rounded-[60px] overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col max-h-[92vh]" onClick={e => e.stopPropagation()}>
             <header className="px-12 py-10 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em]">Auditoria de Pagamento</span>
-                <h4 className="text-3xl font-display text-emerald-950">Solicitação: {viewingRequest.email}</h4>
+                <h4 className="text-2xl font-display text-emerald-950">{viewingRequest.email}</h4>
               </div>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => handleDownload(viewingRequest.proofData!, viewingRequest.proofName)}
-                  className="px-8 py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-3xl font-bold text-xs flex items-center gap-3 transition-all shadow-sm border border-slate-200"
-                >
-                  📥 Baixar Recibo
-                </button>
-                <button 
-                  onClick={() => setViewingRequest(null)}
-                  className="w-14 h-14 bg-emerald-50 text-emerald-950 rounded-full flex items-center justify-center font-bold hover:bg-emerald-100 transition-all shadow-md"
-                >
-                  ✕
-                </button>
-              </div>
+              <button 
+                onClick={() => setViewingRequest(null)}
+                className="w-12 h-12 bg-slate-50 text-emerald-950 rounded-full flex items-center justify-center font-bold hover:bg-slate-100 transition-all"
+              >
+                ✕
+              </button>
             </header>
             
-            <div className="flex-1 overflow-y-auto p-12 bg-slate-50/50 flex items-center justify-center">
-              {viewingRequest.proofData.startsWith('data:application/pdf') ? (
-                <div className="text-center p-24 bg-white rounded-[48px] border-2 border-dashed border-slate-200 shadow-xl max-w-md">
-                  <span className="text-7xl block mb-6">📄</span>
-                  <p className="text-slate-500 font-bold mb-8 text-xl">Recibo em PDF</p>
-                  <button 
-                    onClick={() => handleDownload(viewingRequest.proofData!, viewingRequest.proofName)}
-                    className="bg-emerald-950 text-white px-10 py-5 rounded-3xl font-bold shadow-2xl shadow-emerald-950/20 hover:scale-105 transition-all"
-                  >
-                    Visualizar PDF
-                  </button>
-                </div>
-              ) : (
-                <div className="relative group max-w-3xl">
-                   <img 
-                    src={viewingRequest.proofData} 
-                    alt="Comprovante" 
-                    className="w-full h-auto rounded-[32px] shadow-2xl border-8 border-white ring-1 ring-slate-100"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px] pointer-events-none"></div>
-                </div>
-              )}
+            <div className="flex-1 overflow-y-auto p-12 bg-slate-50/30 flex items-center justify-center">
+              <img 
+                src={viewingRequest.proofData} 
+                alt="Comprovante" 
+                className="max-w-full h-auto rounded-[32px] shadow-2xl border-4 border-white"
+              />
             </div>
 
-            <footer className="p-10 bg-white border-t border-slate-100 flex flex-col md:flex-row justify-between items-center px-12 shrink-0">
-               <button 
-                onClick={() => setViewingRequest(null)}
-                className="text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600 transition-colors"
-              >
-                Cancelar análise
-              </button>
-
-              <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+            <footer className="p-10 bg-white border-t border-slate-100 flex justify-center items-center px-12 shrink-0">
+              <div className="flex gap-4">
                 {onReject && viewingRequest.status === 'Pendente' && (
                   <button 
                     onClick={() => { onReject(viewingRequest.id); setViewingRequest(null); }}
-                    className="bg-white text-red-600 border-2 border-red-100 px-12 py-5 rounded-[32px] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-50 transition-all active:scale-95"
+                    className="bg-white text-red-600 border border-red-100 px-10 py-5 rounded-[24px] font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
                   >
-                    Rejeitar Comprovante
+                    Rejeitar Pagamento
                   </button>
                 )}
                 
                 {viewingRequest.status === 'Pendente' && (
                   <button 
                     onClick={() => { onApprove(viewingRequest.id); setViewingRequest(null); }}
-                    className="bg-emerald-950 text-white px-16 py-5 rounded-[32px] font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-emerald-950/30 hover:bg-emerald-900 active:scale-95 transition-all flex items-center justify-center gap-4"
+                    className="bg-emerald-950 text-white px-14 py-5 rounded-[24px] font-black text-[11px] uppercase tracking-widest shadow-2xl hover:bg-emerald-900 transition-all"
                   >
-                    <span className="text-xl">💎</span> Aprovar Acesso Vitalício
+                    Aprovar Agora
                   </button>
                 )}
               </div>
@@ -126,16 +104,16 @@ const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onAppro
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl font-display text-emerald-950">Central de Ativações</h2>
-          <p className="text-slate-500 text-sm mt-1">Olá Bernardo, valide as novas solicitações de acesso para membros Elite.</p>
+          <p className="text-slate-500 text-sm mt-1">Olá Bernardo, gerencie aqui os acessos e senhas dos membros Elite.</p>
         </div>
         <div className="bg-white p-2 rounded-[24px] border border-slate-200 flex shadow-xl shadow-slate-100/50">
           {(['Pendente', 'Aprovado', 'Rejeitado'] as const).map((f) => (
             <button 
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === f ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === f ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              {f === 'Pendente' ? `Novos (${requests.filter(r => r.status === 'Pendente').length})` : f}
+              {f === 'Pendente' ? `Novas (${requests.filter(r => r.status === 'Pendente').length})` : f}
             </button>
           ))}
         </div>
@@ -145,83 +123,86 @@ const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onAppro
         {filteredRequests.length === 0 ? (
           <div className="bg-white p-24 rounded-[48px] border border-slate-100 text-center shadow-sm">
             <div className="text-5xl mb-6 opacity-30">✨</div>
-            <p className="font-display text-xl text-slate-300 italic">Sem solicitações registradas.</p>
+            <p className="font-display text-xl text-slate-300 italic">Nada para mostrar nesta categoria.</p>
           </div>
         ) : (
           filteredRequests.map(req => (
-            <div key={req.id} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div key={req.id} className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 group overflow-hidden">
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
                 <div className="flex items-center gap-6">
-                  <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center text-2xl shadow-inner transition-transform group-hover:scale-105 ${
-                    req.status === 'Aprovado' ? 'bg-emerald-100 text-emerald-700' : 
-                    req.status === 'Rejeitado' ? 'bg-red-50 text-red-400' : 'bg-slate-50 text-slate-400'
+                  <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center text-2xl shadow-inner ${
+                    req.status === 'Aprovado' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'
                   }`}>
-                    {req.status === 'Aprovado' ? '👑' : req.status === 'Rejeitado' ? '🚫' : '📸'}
+                    {req.status === 'Aprovado' ? '💎' : '⏳'}
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <h4 className="font-bold text-xl text-emerald-950">{req.email}</h4>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[10px] text-slate-300 font-bold uppercase">{new Date(req.timestamp).toLocaleDateString('pt-BR')} às {new Date(req.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                      {req.status === 'Aprovado' && req.generatedPassword && (
-                        <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                          <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">Senha:</span>
-                          <span className="text-[10px] font-black text-emerald-900 font-mono tracking-widest">{req.generatedPassword}</span>
-                        </div>
-                      )}
-                    </div>
+                    <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Registrado em {new Date(req.timestamp).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                {/* Bloco de Credenciais para Aprovados */}
+                {req.status === 'Aprovado' && req.generatedPassword && (
+                  <div className="flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-6 rounded-[32px] border border-slate-100 flex-1 max-w-2xl mx-auto">
+                    <div className="flex-1 w-full md:w-auto">
+                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Senha de Acesso</p>
+                       <div className="flex items-center gap-3">
+                          <code className="bg-white px-4 py-2 rounded-xl text-lg font-black text-emerald-950 font-mono tracking-[0.2em] border border-slate-200">
+                             {req.generatedPassword}
+                          </code>
+                          <button 
+                            onClick={() => handleCopyCredentials(req)}
+                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                              copiedId === req.id ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                            }`}
+                          >
+                            {copiedId === req.id ? 'Copiado!' : 'Copiar Dados'}
+                          </button>
+                       </div>
+                    </div>
+                    <div className="w-px h-12 bg-slate-200 hidden md:block"></div>
+                    <button 
+                      onClick={() => handleSendEmail(req)}
+                      className="w-full md:w-auto px-8 py-5 bg-champagne text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-90 transition-all flex items-center justify-center gap-3 shadow-lg shadow-champagne/20"
+                    >
+                      <span>✉️</span> Enviar Convite p/ E-mail
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 shrink-0">
                   <button 
                     onClick={() => req.proofData && setViewingRequest(req)}
-                    className="px-6 py-4 rounded-2xl border border-slate-200 bg-white text-emerald-950 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2"
+                    className="p-5 rounded-2xl border border-slate-100 bg-white text-slate-400 hover:text-emerald-950 hover:bg-slate-50 transition-all"
+                    title="Ver Comprovante"
                   >
-                    <span>Auditar</span>
-                    <span className="text-base">🔍</span>
+                    🔍
                   </button>
                   
                   {req.status === 'Pendente' && (
                     <div className="flex gap-2">
                       <button 
                         onClick={() => onApprove(req.id)}
-                        className="px-8 py-4 bg-emerald-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-900 transition-all"
+                        className="px-10 py-4 bg-emerald-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl"
                       >
-                        Aprovar
+                        Aprovar PIX
                       </button>
                       <button 
                         onClick={() => onReject && onReject(req.id)}
-                        className="px-6 py-4 bg-red-50 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-100 transition-all"
+                        className="px-6 py-4 bg-red-50 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-100"
                       >
-                        Rejeitar
+                        Recusar
                       </button>
                     </div>
                   )}
 
-                  {req.status === 'Aprovado' && (
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => handleSendEmail(req)}
-                        className="px-8 py-4 bg-champagne text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-champagne/10"
-                      >
-                        <span className="text-base">✉️</span> Enviar Convite
-                      </button>
-                      {onRevoke && (
-                        <button 
-                          onClick={() => onRevoke(req.id)}
-                          className="px-4 py-4 bg-white text-red-500 border border-red-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
-                          title="Banir Usuário Fake"
-                        >
-                          🔨 Banir
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {req.status === 'Rejeitado' && (
-                    <div className="px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-red-50 text-red-500">
-                      REJEITADO
-                    </div>
+                  {req.status === 'Aprovado' && onRevoke && (
+                    <button 
+                      onClick={() => onRevoke(req.id)}
+                      className="px-6 py-4 bg-white text-red-400 border border-red-50 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
+                    >
+                      Banir
+                    </button>
                   )}
                 </div>
               </div>
