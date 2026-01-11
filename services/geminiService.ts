@@ -1,49 +1,27 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { BudgetItem } from "../types";
+import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const analyzeBudget = async (theme: string, currentItems: BudgetItem[]) => {
-  const prompt = `Analise este orçamento de decoração para uma festa com o tema "${theme}". 
-  Itens atuais: ${JSON.stringify(currentItems)}.
-  
-  Sugira 3 novos itens que não podem faltar para este tema e estime custos médios (em BRL). 
-  Também dê uma dica de economia para um dos itens existentes.
-  Retorne um JSON estruturado.`;
-
+export const generateAiInviteCode = async (businessName: string): Promise<string> => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: prompt,
+      contents: `Gere um código de convite único e profissional para fornecedores de eventos. 
+      O nome do atelier é "${businessName}". 
+      O código deve ter entre 8 e 12 caracteres, ser em letras maiúsculas, pode conter hifens.
+      Exemplos de estilo: ATELIER-PRO-2026, ELITE-DECOR-88.
+      Retorne APENAS o código, sem explicações.`,
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            suggestions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  item: { type: Type.STRING },
-                  category: { type: Type.STRING },
-                  estimatedCost: { type: Type.NUMBER },
-                  reason: { type: Type.STRING }
-                },
-                required: ["item", "category", "estimatedCost", "reason"]
-              }
-            },
-            savingTip: { type: Type.STRING }
-          },
-          required: ["suggestions", "savingTip"]
-        }
+        temperature: 0.8,
+        topP: 0.95,
       }
     });
 
-    return JSON.parse(response.text);
+    return response.text.trim();
   } catch (error) {
-    console.error("Gemini Analysis Error:", error);
-    return null;
+    console.error("Erro ao gerar código via IA:", error);
+    // Fallback caso a API falhe
+    return `INVITE-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
   }
 };
