@@ -52,6 +52,10 @@ const App: React.FC = () => {
     localStorage.setItem('planparty_suppliers', JSON.stringify(suppliers));
   }, [suppliers]);
 
+  useEffect(() => {
+    localStorage.setItem('planparty_events', JSON.stringify(events));
+  }, [events]);
+
   const isAdmin = userEmail.toLowerCase() === MASTER_EMAIL.toLowerCase();
 
   const handleLogin = (email: string) => {
@@ -148,7 +152,7 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-2xl mx-auto space-y-6 animate-in fade-in duration-700">
             <div className="text-6xl">📈</div>
             <h2 className="text-3xl font-display text-emerald-950">Performance Atelier</h2>
-            <p className="text-slate-500">Acompanhe o crescimento do seu negócio e a eficiência da sua rede de fornecedores cadastrados.</p>
+            <p className="text-slate-500">Relatórios consolidados de fornecedores e lucratividade anual.</p>
           </div>
         );
       default: return <Dashboard events={events} />;

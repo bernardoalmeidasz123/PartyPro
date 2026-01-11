@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EventParty } from '../types';
 import { MONTHS, YEARS } from '../constants';
@@ -27,7 +26,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
 
   const handleNextMonth = () => {
     if (currentMonth === 11) {
-      if (currentYear < 2040) {
+      if (currentYear < 2030) {
         setCurrentYear(currentYear + 1);
         setCurrentMonth(0);
       }
@@ -39,7 +38,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
   const getEventsForDay = (day: number) => {
     return events.filter(ev => {
       const d = new Date(ev.date);
-      // Ajuste de fuso horário simples para comparação de data
+      // UTC para evitar bugs de fuso horário em produção
       return d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth && d.getUTCDate() === day;
     });
   };
@@ -64,17 +63,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
                 <div className={`text-[9px] p-1.5 rounded border ${ev.externalLink ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'} font-bold truncate`}>
                   {ev.title}
                 </div>
-                {ev.externalLink && (
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(ev.externalLink!);
-                      alert('Link de Ativação copiado da programação!');
-                    }}
-                    className="absolute right-0 top-0 bg-emerald-600 text-white rounded px-1 opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-black"
-                  >
-                    🔗 LINK
-                  </button>
-                )}
               </div>
             ))}
           </div>
@@ -89,7 +77,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-display text-emerald-950">Programação Pro</h2>
-          <p className="text-slate-500 text-sm">Gerencie suas festas e links de ativação até 2040.</p>
+          <p className="text-slate-500 text-sm">Calendário de festas ativo: 2026 - 2030.</p>
         </div>
         <div className="flex items-center space-x-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
           <select 
@@ -136,7 +124,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events }) => {
       
       <div className="flex items-center gap-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
         <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-        <p className="text-[11px] text-emerald-700 font-bold uppercase tracking-widest">Dica: Passe o mouse sobre um evento de ativação para copiar o link Gemini.</p>
+        <p className="text-[11px] text-emerald-700 font-bold uppercase tracking-widest">Painel de Gerenciamento Manual Bernardo Almeida</p>
       </div>
     </div>
   );

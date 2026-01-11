@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const CATEGORIES = ['Mobilário', 'Flores', 'Iluminação', 'Painéis', 'Doces', 'Outros'] as const;
@@ -8,7 +7,7 @@ export const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-export const YEARS = Array.from({ length: 5 }, (_, i) => 2026 + i); // 2026 to 2030
+export const YEARS = [2026, 2027, 2028, 2029, 2030];
 
 export const STATUS_COLORS = {
   Pendente: 'bg-yellow-100 text-yellow-800',
