@@ -1,4 +1,3 @@
-
 export interface BudgetItem {
   id: string;
   description: string;
@@ -43,10 +42,5 @@ export interface AccessRequest {
   proofName: string;
 }
 
-export type ViewType = 'dashboard' | 'calendar' | 'events' | 'suppliers' | 'ai-helper' | 'approvals';
-
-export interface UserAccess {
-  email: string;
-  plan: 'Trial' | 'Pro';
-  isPaid: boolean;
-}
+// Fix: Updated ViewType to use 'ai-helper' instead of 'performance' to match component logic
+export type ViewType = 'dashboard' | 'calendar' | 'events' | 'suppliers' | 'approvals' | 'ai-helper';
