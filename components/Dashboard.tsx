@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { EventParty } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -9,13 +8,13 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ events }) => {
   const confirmedEvents = events.filter(e => e.status === 'Confirmado');
-  const totalRevenue = confirmedEvents.reduce((acc, ev) => acc + ev.totalBudget, 0);
-  const totalCosts = confirmedEvents.reduce((acc, ev) => acc + ev.totalSupplierCost, 0);
+  const totalRevenue = confirmedEvents.reduce((acc, ev) => acc + (ev.totalBudget || 0), 0);
+  const totalCosts = confirmedEvents.reduce((acc, ev) => acc + (ev.totalSupplierCost || 0), 0);
   const totalProfit = totalRevenue - totalCosts;
 
   const chartData = confirmedEvents.slice(0, 5).map(ev => ({
     name: ev.title,
-    lucro: ev.totalBudget - ev.totalSupplierCost,
+    lucro: (ev.totalBudget || 0) - (ev.totalSupplierCost || 0),
   }));
 
   return (
@@ -61,7 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events }) => {
                     <Tooltip 
                       cursor={{fill: '#f8fafc'}}
                       contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
-                      formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Lucro']} 
+                      formatter={(value: any) => [`R$ ${Number(value || 0).toLocaleString('pt-BR')}`, 'Lucro']} 
                     />
                     <Bar dataKey="lucro" fill="#022c22" radius={[15, 15, 15, 15]} barSize={40} />
                   </BarChart>
