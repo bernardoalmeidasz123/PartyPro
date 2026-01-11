@@ -1,9 +1,25 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Inicialização segura - o SDK requer a chave, mas lidaremos com a ausência dela graciosamente
+const getAiClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === "undefined") return null;
+  return new GoogleGenAI({ apiKey });
+};
 
 export const generateAiInviteCode = async (businessName: string): Promise<string> => {
+  const ai = getAiClient();
+  
+  if (!ai) {
+    // Fallback "IA-Simulada" caso não haja API Key
+    const prefixes = ['PRO', 'ELITE', 'PARTNER', 'GOLD', 'DECOR'];
+    const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const year = new Date().getFullYear();
+    const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+    return `${randomPrefix}-${year}-${randomSuffix}`;
+  }
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -21,7 +37,7 @@ export const generateAiInviteCode = async (businessName: string): Promise<string
     return response.text.trim();
   } catch (error) {
     console.error("Erro ao gerar código via IA:", error);
-    // Fallback caso a API falhe
+    // Fallback secundário
     return `INVITE-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
   }
 };
