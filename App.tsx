@@ -9,6 +9,7 @@ import RequestAccessView from './components/RequestAccessView';
 import AdminApprovalView from './components/AdminApprovalView';
 import SupplierRegistrationView from './components/SupplierRegistrationView';
 import SupplierListView from './components/SupplierListView';
+import GuestConfirmationView from './components/GuestConfirmationView';
 import { EventParty, ViewType, AccessRequest, Supplier } from './types';
 
 const App: React.FC = () => {
@@ -18,7 +19,7 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EventParty[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [pendingRequests, setPendingRequests] = useState<AccessRequest[]>([]);
-  const [authView, setAuthView] = useState<'login' | 'request' | 'supplier-reg'>('login');
+  const [authView, setAuthView] = useState<'login' | 'request' | 'supplier-reg' | 'guest-confirmation'>('login');
   
   const MASTER_EMAIL = "bernardoalmeida01031981@gmail.com";
 
@@ -26,6 +27,9 @@ const App: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mode') === 'supplier-registration') {
       setAuthView('supplier-reg');
+    }
+    if (urlParams.get('mode') === 'guest') {
+      setAuthView('guest-confirmation');
     }
 
     const savedSession = localStorage.getItem('planparty_session');
@@ -87,10 +91,10 @@ const App: React.FC = () => {
     localStorage.setItem('planparty_credentials', JSON.stringify(credentials));
 
     setPendingRequests(prev => prev.map(r => 
-      r.id === requestId ? { ...r, status: 'Aprovado' } : r
+      r.id === requestId ? { ...r, status: 'Aprovado', generatedPassword: defaultPass } : r
     ));
 
-    alert(`Acesso liberado para ${request.email}. Senha inicial: ${defaultPass}`);
+    alert(`Acesso liberado para ${request.email}. Senha enviada para a aba de aprovados.`);
   };
 
   const handleRejectRequest = (requestId: string) => {
@@ -99,6 +103,18 @@ const App: React.FC = () => {
         r.id === requestId ? { ...r, status: 'Rejeitado' } : r
       ));
     }
+  };
+
+  const handleGuestConfirm = (eventId: string, guestName: string) => {
+    setEvents(prev => prev.map(ev => {
+      if (ev.id === eventId) {
+        const guests = ev.confirmedGuests || [];
+        if (!guests.includes(guestName)) {
+           return { ...ev, confirmedGuests: [...guests, guestName] };
+        }
+      }
+      return ev;
+    }));
   };
 
   const handleAddSupplier = (supplier: Supplier) => {
@@ -119,6 +135,15 @@ const App: React.FC = () => {
         />
       );
     }
+    if (authView === 'guest-confirmation') {
+      return (
+        <GuestConfirmationView 
+          events={events}
+          onBack={() => setAuthView('login')}
+          onConfirm={handleGuestConfirm}
+        />
+      );
+    }
     if (authView === 'request') {
       return (
         <RequestAccessView 
@@ -135,6 +160,7 @@ const App: React.FC = () => {
         onLogin={handleLogin} 
         onGoToRequest={() => setAuthView('request')} 
         onSupplierAccess={() => setAuthView('supplier-reg')}
+        onGuestAccess={() => setAuthView('guest-confirmation')}
       />
     );
   }

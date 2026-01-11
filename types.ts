@@ -22,6 +22,8 @@ export interface EventParty {
   status: 'Pendente' | 'Confirmado' | 'Finalizado' | 'Cancelado';
   notes: string;
   externalLink?: string;
+  inviteCode?: string; // Código gerado para RSVP
+  confirmedGuests?: string[]; // Lista de nomes (ordem alfabética)
 }
 
 export interface Supplier {
@@ -41,7 +43,8 @@ export interface AccessRequest {
   timestamp: number;
   status: 'Pendente' | 'Aprovado' | 'Rejeitado';
   proofName: string;
-  proofData?: string; // Armazena a imagem em Base64
+  proofData?: string; 
+  generatedPassword?: string; 
 }
 
 export type ViewType = 'dashboard' | 'calendar' | 'events' | 'suppliers' | 'ai-helper' | 'approvals';
