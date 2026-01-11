@@ -6,9 +6,10 @@ interface AdminApprovalViewProps {
   requests: AccessRequest[];
   onApprove: (id: string) => void;
   onReject?: (id: string) => void;
+  onRevoke?: (id: string) => void;
 }
 
-const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onApprove, onReject }) => {
+const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onApprove, onReject, onRevoke }) => {
   const [filter, setFilter] = useState<'Pendente' | 'Aprovado' | 'Rejeitado'>('Pendente');
   const [viewingRequest, setViewingRequest] = useState<AccessRequest | null>(null);
 
@@ -198,12 +199,23 @@ const AdminApprovalView: React.FC<AdminApprovalViewProps> = ({ requests, onAppro
                   )}
 
                   {req.status === 'Aprovado' && (
-                    <button 
-                      onClick={() => handleSendEmail(req)}
-                      className="px-8 py-4 bg-champagne text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-champagne/10"
-                    >
-                      <span className="text-base">✉️</span> Enviar Convite
-                    </button>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => handleSendEmail(req)}
+                        className="px-8 py-4 bg-champagne text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-champagne/10"
+                      >
+                        <span className="text-base">✉️</span> Enviar Convite
+                      </button>
+                      {onRevoke && (
+                        <button 
+                          onClick={() => onRevoke(req.id)}
+                          className="px-4 py-4 bg-white text-red-500 border border-red-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
+                          title="Banir Usuário Fake"
+                        >
+                          🔨 Banir
+                        </button>
+                      )}
+                    </div>
                   )}
 
                   {req.status === 'Rejeitado' && (

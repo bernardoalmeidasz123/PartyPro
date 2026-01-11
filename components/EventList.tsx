@@ -46,7 +46,15 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
     };
     setEvents([...events, ev]);
     setIsAddingEvent(false);
+    setSelectedEventId(ev.id);
     setNewEvent({ title: '', clientName: '', date: '', time: '', location: '', theme: '', status: 'Pendente' });
+  };
+
+  const deleteEvent = (id: string) => {
+    if (window.confirm("Tem certeza que deseja CANCELAR e EXCLUIR permanentemente este evento do Atelier?")) {
+      setEvents(prev => prev.filter(e => e.id !== id));
+      setSelectedEventId(null);
+    }
   };
 
   const addBudgetItem = () => {
@@ -96,10 +104,10 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
         {isAddingEvent && (
           <div className="bg-white p-6 rounded-[32px] border-2 border-emerald-100 shadow-xl space-y-4 animate-in fade-in zoom-in duration-300">
-            <input type="text" placeholder="Nome da Festa" className="w-full p-4 border rounded-2xl outline-none bg-slate-50 focus:bg-white transition-all" onChange={e => setNewEvent({...newEvent, title: e.target.value})} />
+            <input type="text" placeholder="Nome da Festa" className="w-full p-4 border rounded-2xl outline-none bg-slate-50 focus:bg-white transition-all text-sm" onChange={e => setNewEvent({...newEvent, title: e.target.value})} />
             <div className="grid grid-cols-2 gap-2">
-              <input type="date" className="p-4 border rounded-2xl outline-none bg-slate-50 focus:bg-white" onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
-              <input type="time" className="p-4 border rounded-2xl outline-none bg-slate-50 focus:bg-white" onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
+              <input type="date" className="p-4 border rounded-2xl outline-none bg-slate-50 focus:bg-white text-xs" onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
+              <input type="time" className="p-4 border rounded-2xl outline-none bg-slate-50 focus:bg-white text-xs" onChange={e => setNewEvent({...newEvent, time: e.target.value})} />
             </div>
             <div className="flex space-x-2">
               <button onClick={createEvent} className="flex-1 bg-emerald-950 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest">Criar Festa</button>
@@ -126,7 +134,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                 <p className="text-sm font-bold text-emerald-950">R$ {ev.totalBudget.toLocaleString('pt-BR')}</p>
                 <div className="flex items-center gap-1">
                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">{ev.confirmedGuests?.length || 0}</span>
-                   <span className="text-[9px] text-slate-300 font-bold uppercase">convidados</span>
+                   <span className="text-[9px] text-slate-300 font-bold uppercase">RSVP</span>
                 </div>
               </div>
             </div>
@@ -142,7 +150,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
       <div className="lg:col-span-2">
         {selectedEvent ? (
-          <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden flex flex-col min-h-[600px]">
+          <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden flex flex-col min-h-[600px] animate-in slide-in-from-right-4 duration-500">
             <header className="p-8 border-b border-gray-100 bg-slate-50/50 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-emerald-950 text-white flex items-center justify-center rounded-2xl text-2xl shadow-xl">✨</div>
@@ -158,9 +166,18 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                 </div>
               </div>
               
-              <div className="flex bg-white p-1 rounded-2xl border border-slate-100">
-                <button onClick={() => setActiveTab('budget')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'budget' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Financeiro</button>
-                <button onClick={() => setActiveTab('guests')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'guests' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Convidados ({selectedEvent.confirmedGuests?.length || 0})</button>
+              <div className="flex items-center gap-3">
+                <div className="flex bg-white p-1 rounded-2xl border border-slate-100">
+                  <button onClick={() => setActiveTab('budget')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'budget' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Financeiro</button>
+                  <button onClick={() => setActiveTab('guests')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'guests' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Convidados</button>
+                </div>
+                <button 
+                  onClick={() => deleteEvent(selectedEvent.id)}
+                  className="w-12 h-12 flex items-center justify-center bg-red-50 text-red-500 rounded-2xl border border-red-100 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                  title="Cancelar Evento"
+                >
+                  🗑️
+                </button>
               </div>
             </header>
 
@@ -196,11 +213,11 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descrição</label>
-                          <input type="text" placeholder="Arco de Balões Luxo" className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne" value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} />
+                          <input type="text" placeholder="Arco de Balões Luxo" className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne text-sm" value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Categoria</label>
-                          <select className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value as any})}>
+                          <select className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne text-sm" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value as any})}>
                             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                           </select>
                         </div>
@@ -208,11 +225,11 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Custo Fornecedor (R$)</label>
-                          <input type="number" className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne" value={newItem.supplierCost || ''} onChange={e => setNewItem({...newItem, supplierCost: parseFloat(e.target.value) || 0})} />
+                          <input type="number" className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne text-sm" value={newItem.supplierCost || ''} onChange={e => setNewItem({...newItem, supplierCost: parseFloat(e.target.value) || 0})} />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Preço Venda (R$)</label>
-                          <input type="number" className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne" value={newItem.sellPrice || ''} onChange={e => setNewItem({...newItem, sellPrice: parseFloat(e.target.value) || 0})} />
+                          <input type="number" className="w-full p-4 bg-white border rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-champagne text-sm" value={newItem.sellPrice || ''} onChange={e => setNewItem({...newItem, sellPrice: parseFloat(e.target.value) || 0})} />
                         </div>
                       </div>
                       <div className="flex space-x-3 pt-4">

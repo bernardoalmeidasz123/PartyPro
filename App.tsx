@@ -10,6 +10,7 @@ import AdminApprovalView from './components/AdminApprovalView';
 import SupplierRegistrationView from './components/SupplierRegistrationView';
 import SupplierListView from './components/SupplierListView';
 import GuestConfirmationView from './components/GuestConfirmationView';
+import SupplierLoginView from './components/SupplierLoginView';
 import { EventParty, ViewType, AccessRequest, Supplier } from './types';
 
 const App: React.FC = () => {
@@ -19,7 +20,7 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EventParty[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [pendingRequests, setPendingRequests] = useState<AccessRequest[]>([]);
-  const [authView, setAuthView] = useState<'login' | 'request' | 'supplier-reg' | 'guest-confirmation'>('login');
+  const [authView, setAuthView] = useState<'login' | 'request' | 'supplier-reg' | 'guest-confirmation' | 'supplier-login'>('login');
   
   const MASTER_EMAIL = "bernardoalmeida01031981@gmail.com";
 
@@ -73,6 +74,7 @@ const App: React.FC = () => {
     setUserEmail('');
     localStorage.removeItem('planparty_session');
     setActiveView('dashboard');
+    setAuthView('login');
   };
 
   const handleApproveRequest = (requestId: string) => {
@@ -105,6 +107,29 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRevokeAccess = (requestId: string) => {
+    const request = pendingRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    if (window.confirm(`⚠️ AÇÃO CRÍTICA: Deseja BANIR ${request.email}?\n\nO e-mail será removido da lista de autorizados e a senha será deletada permanentemente.`)) {
+      // Remover das listas de autorização no LocalStorage
+      const authorized = JSON.parse(localStorage.getItem('planparty_authorized_emails') || '[]');
+      const newAuthorized = authorized.filter((email: string) => email.toLowerCase() !== request.email.toLowerCase());
+      localStorage.setItem('planparty_authorized_emails', JSON.stringify(newAuthorized));
+
+      const credentials = JSON.parse(localStorage.getItem('planparty_credentials') || '{}');
+      delete credentials[request.email.toLowerCase()];
+      localStorage.setItem('planparty_credentials', JSON.stringify(credentials));
+
+      // Atualizar estado e status da requisição
+      setPendingRequests(prev => prev.map(r => 
+        r.id === requestId ? { ...r, status: 'Rejeitado', generatedPassword: undefined } : r
+      ));
+
+      alert(`Usuário ${request.email} foi banido e seu acesso foi revogado com sucesso.`);
+    }
+  };
+
   const handleGuestConfirm = (eventId: string, guestName: string) => {
     setEvents(prev => prev.map(ev => {
       if (ev.id === eventId) {
@@ -125,12 +150,19 @@ const App: React.FC = () => {
     if (authView === 'supplier-reg') {
       return (
         <SupplierRegistrationView 
-          onBack={() => {
-            window.history.replaceState({}, document.title, window.location.pathname);
-            setAuthView('login');
-          }}
-          onSuccess={(s) => {
-            handleAddSupplier(s);
+          onBack={() => setAuthView('login')}
+          onSuccess={(s) => handleAddSupplier(s)}
+        />
+      );
+    }
+    if (authView === 'supplier-login') {
+      return (
+        <SupplierLoginView 
+          suppliers={suppliers}
+          onBack={() => setAuthView('login')}
+          onLogin={(s) => {
+            alert(`Bem-vindo, ${s.name}! Você está logado no Atelier.`);
+            handleLogin(s.email);
           }}
         />
       );
@@ -161,6 +193,7 @@ const App: React.FC = () => {
         onGoToRequest={() => setAuthView('request')} 
         onSupplierAccess={() => setAuthView('supplier-reg')}
         onGuestAccess={() => setAuthView('guest-confirmation')}
+        onSupplierLogin={() => setAuthView('supplier-login')}
       />
     );
   }
@@ -172,7 +205,7 @@ const App: React.FC = () => {
       case 'events': return <EventList events={events} setEvents={setEvents} />;
       case 'suppliers': return <SupplierListView suppliers={suppliers} setSuppliers={setSuppliers} />;
       case 'approvals': 
-        return <AdminApprovalView requests={pendingRequests} onApprove={handleApproveRequest} onReject={handleRejectRequest} />;
+        return <AdminApprovalView requests={pendingRequests} onApprove={handleApproveRequest} onReject={handleRejectRequest} onRevoke={handleRevokeAccess} />;
       case 'ai-helper':
         return (
           <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-2xl mx-auto space-y-6 animate-in fade-in duration-700">
