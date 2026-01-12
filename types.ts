@@ -22,8 +22,11 @@ export interface EventParty {
   status: 'Pendente' | 'Confirmado' | 'Finalizado' | 'Cancelado';
   notes: string;
   externalLink?: string;
-  inviteCode?: string; // Código gerado para RSVP
-  confirmedGuests?: string[]; // Lista de nomes (ordem alfabética)
+  inviteCode?: string; 
+  confirmedGuests?: string[];
+  aiInviteText?: string;
+  locationMapUrl?: string;
+  locationDetails?: string;
 }
 
 export interface Supplier {
