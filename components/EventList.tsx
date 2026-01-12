@@ -1,8 +1,10 @@
 
 import React, { useState } from 'react';
 import { EventParty, BudgetItem } from '../types';
-import { CATEGORIES, STATUS_COLORS } from '../constants';
+import { STATUS_COLORS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
+
+declare var process: { env: { [key: string]: string } };
 
 interface EventListProps {
   events: EventParty[];
@@ -42,7 +44,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
         contents: prompt,
       });
 
-      const text = response.text;
+      const text = response.text || '';
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, aiInviteText: text } : ev));
     } catch (error) {
       console.error("Erro ao gerar convite:", error);
@@ -58,8 +60,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
-      // Obter localização via Geolocation se disponível para melhor precisão
-      let lat = 0, lng = 0;
+      let lat: number | undefined, lng: number | undefined;
       try {
         const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej));
         lat = pos.coords.latitude;
@@ -67,7 +68,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       } catch (e) { /* ignore */ }
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite-latest",
         contents: `Encontre o local exato para este evento: "${selectedEvent.location}". Forneça o link do Google Maps e uma breve descrição do local.`,
         config: {
           tools: [{ googleMaps: {} }],
@@ -80,8 +81,8 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       });
 
       const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-      const mapUri = grounding?.find(c => c.maps?.uri)?.maps?.uri;
-      const details = response.text;
+      const mapUri = grounding?.find((c: any) => c.maps?.uri)?.maps?.uri;
+      const details = response.text || '';
 
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { 
         ...ev, 
@@ -113,7 +114,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       time: newEvent.time || '00:00',
       location: newEvent.location || '',
       theme: newEvent.theme || '',
-      status: newEvent.status as any || 'Pendente',
+      status: (newEvent.status as any) || 'Pendente',
       budgetItems: [],
       totalBudget: 0,
       totalSupplierCost: 0,
@@ -125,13 +126,6 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
     setIsAddingEvent(false);
     setSelectedEventId(ev.id);
     setNewEvent({ title: '', clientName: '', date: '', time: '', location: '', theme: '', status: 'Pendente' });
-  };
-
-  const deleteEvent = (id: string) => {
-    if (window.confirm("Tem certeza que deseja CANCELAR e EXCLUIR permanentemente este evento do Atelier?")) {
-      setEvents(prev => prev.filter(e => e.id !== id));
-      setSelectedEventId(null);
-    }
   };
 
   const addBudgetItem = () => {
@@ -205,7 +199,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
             >
               <div className="flex justify-between items-start">
                 <h4 className="font-bold text-slate-800 truncate pr-2">{ev.title}</h4>
-                <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter ${STATUS_COLORS[ev.status]}`}>{ev.status}</span>
+                <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter ${STATUS_COLORS[ev.status as keyof typeof STATUS_COLORS]}`}>{ev.status}</span>
               </div>
               <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 tracking-widest">{new Date(ev.date).toLocaleDateString('pt-BR')} • {ev.location || 'Sem local'}</p>
               <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
@@ -273,6 +267,19 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                       ))}
                     </tbody>
                   </table>
+                  {isAddingItem && (
+                    <div className="mt-8 p-6 bg-slate-50 rounded-[32px] border border-slate-200 space-y-4 animate-in slide-in-from-bottom-2">
+                       <input type="text" placeholder="Descrição do Item" className="w-full p-4 border rounded-2xl outline-none" value={newItem.description} onChange={e => setNewItem({...newItem, description: e.target.value})} />
+                       <div className="grid grid-cols-2 gap-4">
+                          <input type="number" placeholder="Custo (Fornecedor)" className="p-4 border rounded-2xl outline-none" onChange={e => setNewItem({...newItem, supplierCost: Number(e.target.value)})} />
+                          <input type="number" placeholder="Venda (Cliente)" className="p-4 border rounded-2xl outline-none" onChange={e => setNewItem({...newItem, sellPrice: Number(e.target.value)})} />
+                       </div>
+                       <div className="flex gap-2">
+                          <button onClick={addBudgetItem} className="flex-1 bg-emerald-950 text-white py-4 rounded-2xl font-black text-[10px] uppercase">Salvar Item</button>
+                          <button onClick={() => setIsAddingItem(false)} className="px-6 text-slate-400 text-[10px] font-black uppercase">Cancelar</button>
+                       </div>
+                    </div>
+                  )}
                   <button 
                     onClick={() => setIsAddingItem(true)}
                     className="mt-10 w-full py-6 border-2 border-dashed border-slate-100 rounded-[32px] text-slate-300 hover:text-emerald-900 hover:border-emerald-100 transition-all font-black text-[10px] uppercase tracking-widest"
@@ -309,7 +316,6 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
               {activeTab === 'ai' && (
                 <div className="animate-in fade-in duration-700 space-y-10">
-                  {/* SEÇÃO MAPA */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
@@ -366,7 +372,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                           height="100%" 
                           frameBorder="0" 
                           style={{ border: 0 }}
-                          src={`https://www.google.com/maps/embed/v1/place?key=REPLACE_WITH_REAL_MAPS_KEY_IF_NEEDED&q=${encodeURIComponent(selectedEvent.location)}`}
+                          src={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.location)}&output=embed`}
                           allowFullScreen
                           className="grayscale opacity-80"
                         ></iframe>
@@ -379,7 +385,6 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                     </div>
                   </div>
 
-                  {/* SEÇÃO CONVITE AI */}
                   <div className="space-y-6 pt-10 border-t border-slate-100">
                     <div className="flex items-center justify-between">
                       <div>

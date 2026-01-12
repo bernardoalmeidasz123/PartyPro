@@ -2,6 +2,8 @@
 import React, { useState, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 
+declare var process: { env: { [key: string]: string } };
+
 const InviteCreatorView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [inviteText, setInviteText] = useState('');
@@ -51,7 +53,8 @@ const InviteCreatorView: React.FC = () => {
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
-          const base64String = (reader.result as string).split(',')[1];
+          const res = reader.result as string;
+          const base64String = res.split(',')[1];
           setAudioBase64(base64String);
         };
         stream.getTracks().forEach(track => track.stop());
@@ -98,7 +101,6 @@ const InviteCreatorView: React.FC = () => {
 
       const parts: any[] = [{ text: textPrompt }];
 
-      // Se houver áudio gravado, adicionamos como parte da entrada para a IA "ouvir" a inspiração
       if (audioBase64) {
         parts.push({
           inlineData: {
@@ -136,7 +138,6 @@ const InviteCreatorView: React.FC = () => {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-        {/* Painel de Configuração */}
         <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm space-y-8">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -260,7 +261,6 @@ const InviteCreatorView: React.FC = () => {
           </button>
         </div>
 
-        {/* Preview do Convite */}
         <div className="relative group">
           <div className="absolute -inset-1 bg-gradient-to-r from-champagne/20 to-emerald-500/20 rounded-[60px] blur opacity-25"></div>
           <div className="relative bg-white min-h-[500px] h-full rounded-[60px] border border-slate-100 shadow-xl overflow-hidden flex flex-col">
