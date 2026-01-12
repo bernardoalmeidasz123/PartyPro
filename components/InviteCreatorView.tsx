@@ -97,8 +97,12 @@ const InviteCreatorView: React.FC = () => {
         contents: { parts: [{ text: prompt }] },
         config: { imageConfig: { aspectRatio: "4:3" } }
       });
-      // Adicionado encadeamento opcional para evitar erro TS2532
-      const partWithImage = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      
+      // Checagem segura para TypeScript
+      const candidate = response.candidates ? response.candidates[0] : null;
+      const parts = candidate?.content?.parts;
+      const partWithImage = parts ? parts.find(p => p.inlineData) : null;
+      
       if (partWithImage?.inlineData) {
         setVisualPreview(`data:image/png;base64,${partWithImage.inlineData.data}`);
       } else {
