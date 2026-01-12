@@ -98,12 +98,12 @@ const InviteCreatorView: React.FC = () => {
         config: { imageConfig: { aspectRatio: "4:3" } }
       });
       
-      // Checagem segura para TypeScript
       const candidate = response.candidates ? response.candidates[0] : null;
-      const parts = candidate?.content?.parts;
-      const partWithImage = parts ? parts.find(p => p.inlineData) : null;
+      const content = candidate ? candidate.content : null;
+      const parts = content ? content.parts : [];
+      const partWithImage = parts.find(p => p.inlineData);
       
-      if (partWithImage?.inlineData) {
+      if (partWithImage && partWithImage.inlineData) {
         setVisualPreview(`data:image/png;base64,${partWithImage.inlineData.data}`);
       } else {
         alert("O atelier não pôde gerar a imagem agora.");
@@ -111,6 +111,8 @@ const InviteCreatorView: React.FC = () => {
     } catch (error: any) {
       if (error?.message?.includes("entity was not found") && window.aistudio) {
         await window.aistudio.openSelectKey();
+      } else {
+        console.error(error);
       }
     } finally {
       setLoadingImage(false);
