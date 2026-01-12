@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 
 declare var process: { env: { [key: string]: string } };
+declare var window: any;
 
 const InviteCreatorView: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -37,6 +38,15 @@ const InviteCreatorView: React.FC = () => {
     { name: 'Minimalista Branco', colors: ['#ffffff', '#e2e8f0'] },
     { name: 'Bordeaux & Prata', colors: ['#4c0519', '#e5e7eb'] }
   ];
+
+  const checkAndGetAI = async () => {
+    // Verifica se já existe uma chave selecionada no ambiente AI Studio/Atelier
+    if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) {
+      await window.aistudio.openSelectKey();
+    }
+    // Cria nova instância garantindo que use a chave atualizada de process.env.API_KEY
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  };
 
   const startRecording = async () => {
     try {
@@ -87,7 +97,7 @@ const InviteCreatorView: React.FC = () => {
     setLoadingImage(true);
     setPreviewTab('visual');
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = await checkAndGetAI();
       const prompt = `A high-end, luxury event decoration concept for a party themed "${formData.theme}". 
       Color palette: ${formData.palette}. 
       Style: ${formData.vibe}. 
@@ -110,7 +120,7 @@ const InviteCreatorView: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Erro ao gerar visual:", error);
-      alert("Não foi possível gerar a prévia visual no momento.");
+      alert(`Falha no Preview Visual: ${error?.message || "Erro desconhecido"}. Certifique-se de que selecionou sua chave.`);
     } finally {
       setLoadingImage(false);
     }
@@ -125,7 +135,7 @@ const InviteCreatorView: React.FC = () => {
     setLoading(true);
     setPreviewTab('text');
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = await checkAndGetAI();
       
       const textPrompt = `Você é um redator de convites de luxo para um Atelier de Festas Elite. 
       Crie um convite deslumbrante em português para:
@@ -160,7 +170,7 @@ const InviteCreatorView: React.FC = () => {
       setInviteText(response.text || '');
     } catch (error: any) {
       console.error("Erro ao gerar convite:", error);
-      alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}`);
+      alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}. Certifique-se de que selecionou sua chave.`);
     } finally {
       setLoading(false);
     }

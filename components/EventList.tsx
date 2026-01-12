@@ -5,6 +5,7 @@ import { STATUS_COLORS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
 
 declare var process: { env: { [key: string]: string } };
+declare var window: any;
 
 interface EventListProps {
   events: EventParty[];
@@ -27,14 +28,18 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
 
+  const checkAndGetAI = async () => {
+    if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) {
+      await window.aistudio.openSelectKey();
+    }
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  };
+
   const generateInviteWithAI = async () => {
     if (!selectedEvent) return;
     setIsGeneratingInvite(true);
     try {
-      const apiKey = process.env.API_KEY;
-      if (!apiKey) throw new Error("API_KEY não configurada nas variáveis de ambiente.");
-      
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = await checkAndGetAI();
       const prompt = `Crie um convite de luxo para o evento "${selectedEvent.title}" da cliente ${selectedEvent.clientName}. 
       Tema: ${selectedEvent.theme}. 
       Data: ${new Date(selectedEvent.date).toLocaleDateString('pt-BR')}. 
@@ -51,7 +56,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, aiInviteText: text } : ev));
     } catch (error: any) {
       console.error("Erro ao gerar convite:", error);
-      alert(`O Atelier AI falhou: ${error?.message || "Erro de conexão"}. Verifique se sua API Key está correta na Vercel.`);
+      alert(`O Atelier AI falhou: ${error?.message || "Erro de conexão"}.`);
     } finally {
       setIsGeneratingInvite(false);
     }
@@ -61,10 +66,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
     if (!selectedEvent || !selectedEvent.location) return;
     setIsLocating(true);
     try {
-      const apiKey = process.env.API_KEY;
-      if (!apiKey) throw new Error("API_KEY não configurada.");
-
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = await checkAndGetAI();
       
       let lat: number | undefined, lng: number | undefined;
       try {
