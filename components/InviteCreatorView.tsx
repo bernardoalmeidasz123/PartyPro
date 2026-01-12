@@ -8,27 +8,26 @@ declare var window: any;
 const InviteCreatorView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
-  const [inviteText, setInviteText] = useState('');
+  const [generatedContent, setGeneratedContent] = useState('');
   const [visualPreview, setVisualPreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [previewTab, setPreviewTab] = useState<'text' | 'visual'>('text');
   const [isCustomPalette, setIsCustomPalette] = useState(false);
+  const [creationType, setCreationType] = useState<'invite' | 'cake_table'>('invite');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
   const [formData, setFormData] = useState({
-    eventTitle: '',
     clientName: '',
     date: '',
     time: '',
     location: '',
-    theme: '',
-    vibe: 'Clássico Sofisticado',
     palette: 'Esmeralda & Ouro',
     customPaletteText: '',
-    additionalInfo: ''
+    additionalInfo: '',
+    theme: ''
   });
 
   const palettes = [
@@ -49,7 +48,7 @@ const InviteCreatorView: React.FC = () => {
     
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      throw new Error("Chave de API não configurada. Por favor, siga as instruções no topo.");
+      throw new Error("Chave de API não detectada. Por favor, cole sua chave no botão 'Configurar API' no topo.");
     }
     
     return new GoogleGenAI({ apiKey });
@@ -94,14 +93,27 @@ const InviteCreatorView: React.FC = () => {
   const getActivePalette = () => isCustomPalette ? (formData.customPaletteText || 'Personalizada') : formData.palette;
 
   const generateVisualPreview = async () => {
-    if (!formData.theme) return alert("Defina um tema primeiro.");
+    if (!formData.clientName || !formData.date || !formData.location) {
+      return alert("Por favor, preencha o Nome, Data e Local para gerar o design.");
+    }
     
     setLoadingImage(true);
     setPreviewTab('visual');
     try {
       const ai = await checkAndGetAI();
       const palette = getActivePalette();
-      const prompt = `Luxury event decoration for a party themed "${formData.theme}". Color palette: ${palette}. Style/Vibe: ${formData.vibe}. High-end professional photography, 8k, cinematic lighting, sophisticated atmosphere.`;
+      
+      // O prompt agora foca estritamente no DESIGN DO CONVITE
+      const prompt = `Luxury wedding/event invitation card design. 
+      Details to include in the visual style:
+      - Client Name: ${formData.clientName}
+      - Event Date: ${formData.date}
+      - Location: ${formData.location}
+      - Color Palette: ${palette}
+      - Extra Details: ${formData.additionalInfo}
+      The image should be a professional high-end flat lay of a physical invitation card. 
+      Premium paper texture, elegant typography, minimalist gold or silver foil accents, 
+      sophisticated and cinematic lighting, 8k resolution, artistic composition.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -115,13 +127,13 @@ const InviteCreatorView: React.FC = () => {
       if (partWithImage?.inlineData) {
         setVisualPreview(`data:image/png;base64,${partWithImage.inlineData.data}`);
       } else {
-        alert("Não foi possível gerar a prévia visual no momento.");
+        alert("Não foi possível gerar o design do convite no momento.");
       }
     } catch (error: any) {
-      if (error?.message?.includes("Requested entity was not found") && window.aistudio) {
+      if ((error?.message?.includes("Requested entity was not found") || error?.message?.includes("API key")) && window.aistudio) {
         await window.aistudio.openSelectKey();
       } else {
-        alert(error?.message || "Erro ao gerar visual.");
+        alert(error?.message || "Erro ao gerar design.");
       }
     } finally {
       setLoadingImage(false);
@@ -129,14 +141,32 @@ const InviteCreatorView: React.FC = () => {
   };
 
   const handleGenerateText = async () => {
-    if (!formData.eventTitle || !formData.date) return alert("Preencha ao menos título e data.");
+    if (!formData.clientName || !formData.date || !formData.location) {
+      return alert("Preencha Nome, Data e Local.");
+    }
     
     setLoading(true);
     setPreviewTab('text');
     try {
       const ai = await checkAndGetAI();
       const palette = getActivePalette();
-      const textPrompt = `Redija um convite de luxo exclusivo em português para o evento "${formData.eventTitle}" da cliente ${formData.clientName}. Tema: ${formData.theme}. Data: ${formData.date} às ${formData.time}. Local: ${formData.location}. Paleta: ${palette}. Estilo: ${formData.vibe}. Instruções extras: ${formData.additionalInfo}. Seja poético e sofisticado.`;
+      
+      let textPrompt = "";
+      if (creationType === 'cake_table') {
+        textPrompt = `Descreva um conceito de mesa de bolo de luxo que harmonize perfeitamente com um convite na paleta ${palette}. 
+        Anfitrião: ${formData.clientName}. 
+        Data: ${formData.date}. 
+        Local: ${formData.location}. 
+        Instruções adicionais: ${formData.additionalInfo}. 
+        Fale sobre flores, doces e iluminação de forma poética.`;
+      } else {
+        textPrompt = `Redija o texto de um convite de luxo para ${formData.clientName}. 
+        Data: ${formData.date} às ${formData.time}. 
+        Local: ${formData.location}. 
+        Paleta sugerida: ${palette}. 
+        Instruções extras: ${formData.additionalInfo}. 
+        Use uma caligrafia verbal sofisticada e emocionante.`;
+      }
 
       const parts: any[] = [{ text: textPrompt }];
       if (audioBase64) {
@@ -148,12 +178,12 @@ const InviteCreatorView: React.FC = () => {
         contents: { parts }
       });
 
-      setInviteText(response.text || 'O Oráculo da Redação está indisponível.');
+      setGeneratedContent(response.text || 'O Oráculo está indisponível.');
     } catch (error: any) {
-      if (error?.message?.includes("Requested entity was not found") && window.aistudio) {
+      if ((error?.message?.includes("Requested entity was not found") || error?.message?.includes("API key")) && window.aistudio) {
         await window.aistudio.openSelectKey();
       } else {
-        alert(error?.message || "Erro ao redigir convite.");
+        alert(error?.message || "Erro ao gerar texto.");
       }
     } finally {
       setLoading(false);
@@ -164,60 +194,53 @@ const InviteCreatorView: React.FC = () => {
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-4xl font-display text-emerald-950">Estúdio de Convites AI</h2>
-          <p className="text-slate-500 mt-2">Harmonize dados e cores para criar a poesia da sua festa.</p>
+          <h2 className="text-4xl font-display text-emerald-950">Atelier de Design AI</h2>
+          <p className="text-slate-500 mt-2">Criação de convites e conceitos de mesa com inteligência de luxo.</p>
         </div>
-        <div className="flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
-           <button onClick={() => setPreviewTab('text')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewTab === 'text' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}>Caligrafia</button>
-           <button onClick={() => setPreviewTab('visual')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewTab === 'visual' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}>Visual</button>
+        
+        <div className="flex bg-slate-100 p-1.5 rounded-[24px] shadow-inner border border-slate-200">
+          <button 
+            onClick={() => setCreationType('invite')} 
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'invite' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-emerald-900'}`}
+          >
+            <span>📜</span> Convite
+          </button>
+          <button 
+            onClick={() => setCreationType('cake_table')} 
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'cake_table' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-emerald-900'}`}
+          >
+            <span>🍰</span> Mesa do Bolo
+          </button>
         </div>
       </header>
-
-      {/* Tutorial Card */}
-      <div className="p-8 bg-emerald-50/50 rounded-[40px] border border-emerald-100 flex flex-col md:flex-row items-center gap-8 shadow-sm">
-        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-3xl shadow-sm border border-emerald-50 shrink-0">🗝️</div>
-        <div className="space-y-2 text-center md:text-left">
-          <h4 className="text-[11px] font-black text-emerald-900 uppercase tracking-widest">Ativação da Inteligência Atelier</h4>
-          <p className="text-xs text-emerald-800 leading-relaxed opacity-80">
-            Para redigir convites e gerar previews visuais, você precisa de uma chave Gemini. 
-            Acesse <a href="https://ai.google.dev" target="_blank" rel="noreferrer" className="font-bold underline decoration-champagne">ai.google.dev</a>, gere sua chave e clique no botão de <strong>Chave</strong> no topo da página para colar.
-          </p>
-        </div>
-        <button 
-          onClick={() => window.aistudio?.openSelectKey()}
-          className="px-8 py-3 bg-emerald-950 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-900 transition-all shadow-lg"
-        >
-          Configurar Chave Agora
-        </button>
-      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
         <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm space-y-8">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Título</label>
-                <input type="text" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.eventTitle} onChange={e => setFormData({...formData, eventTitle: e.target.value})} />
+                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest ml-1">Nome do Anfitrião</label>
+                <input type="text" placeholder="Ex: Maria e João" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm focus:ring-1 focus:ring-champagne transition-all" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Anfitrião</label>
-                <input type="text" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} />
+                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest ml-1">Data do Evento</label>
+                <input type="date" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs outline-none focus:ring-1 focus:ring-champagne transition-all" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tema</label>
-                <input type="text" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.theme} onChange={e => setFormData({...formData, theme: e.target.value})} />
+                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest ml-1">Local da Festa</label>
+                <input type="text" placeholder="Ex: Villa Toscana" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm focus:ring-1 focus:ring-champagne transition-all" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data</label>
-                <input type="date" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest ml-1">Horário</label>
+                <input type="time" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs outline-none focus:ring-1 focus:ring-champagne transition-all" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Paleta de Cores</label>
+              <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest ml-1">Paleta de Cores</label>
               <div className="flex flex-wrap gap-3 p-4 bg-slate-50 rounded-[32px] border border-slate-100">
                 {palettes.map(p => (
                   <button key={p.name} type="button" onClick={() => {setIsCustomPalette(false); setFormData({...formData, palette: p.name});}} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${(!isCustomPalette && formData.palette === p.name) ? 'bg-white shadow-sm ring-1 ring-emerald-100' : 'opacity-40 hover:opacity-100'}`}>
@@ -233,14 +256,14 @@ const InviteCreatorView: React.FC = () => {
                 </button>
               </div>
               {isCustomPalette && (
-                <input type="text" className="w-full p-4 mt-2 rounded-2xl bg-emerald-50 border border-emerald-100 text-sm outline-none" placeholder="Descreva sua paleta..." value={formData.customPaletteText} onChange={e => setFormData({...formData, customPaletteText: e.target.value})} />
+                <input type="text" className="w-full p-4 mt-2 rounded-2xl bg-emerald-50 border border-emerald-100 text-sm outline-none" placeholder="Descreva sua paleta personalizada..." value={formData.customPaletteText} onChange={e => setFormData({...formData, customPaletteText: e.target.value})} />
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instruções de Voz ou Texto</label>
+              <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest ml-1">Instruções de Estilo</label>
               <div className="relative">
-                <textarea rows={2} className="w-full p-5 pr-14 rounded-[28px] bg-slate-50 border border-slate-100 outline-none text-sm resize-none" placeholder="Desejos extras..." value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})} />
+                <textarea rows={3} className="w-full p-5 pr-14 rounded-[28px] bg-slate-50 border border-slate-100 outline-none text-sm resize-none focus:ring-1 focus:ring-champagne transition-all" placeholder="Ex: Toque campestre, flores secas, estilo boho chic..." value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})} />
                 <button type="button" onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={stopRecording} className={`absolute right-4 bottom-4 w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : audioBase64 ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
                   {isRecording ? '⏺️' : audioBase64 ? '✅' : '🎙️'}
                 </button>
@@ -250,10 +273,10 @@ const InviteCreatorView: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button onClick={handleGenerateText} disabled={loading} className="py-5 bg-emerald-950 text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
-              {loading ? <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : '✨ Redigir Texto'}
+              {loading ? <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : `✨ Redigir ${creationType === 'invite' ? 'Convite' : 'Conceito'}`}
             </button>
             <button onClick={generateVisualPreview} disabled={loadingImage} className="py-5 bg-champagne text-emerald-950 rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
-              {loadingImage ? <span className="w-3 h-3 border-2 border-emerald-950/20 border-t-emerald-950 rounded-full animate-spin"></span> : '🎨 Preview Visual'}
+              {loadingImage ? <span className="w-3 h-3 border-2 border-emerald-950/20 border-t-emerald-950 rounded-full animate-spin"></span> : '🎨 Gerar Design do Convite'}
             </button>
           </div>
         </div>
@@ -261,39 +284,49 @@ const InviteCreatorView: React.FC = () => {
         <div className="relative group min-h-[500px]">
           <div className="absolute -inset-1 bg-gradient-to-r from-champagne/10 to-emerald-500/10 rounded-[60px] blur opacity-25"></div>
           <div className="relative bg-white h-full rounded-[60px] border border-slate-100 shadow-xl overflow-hidden flex flex-col p-12 items-center justify-center text-center">
+            
+            <div className="absolute top-8 flex gap-2 bg-slate-50 p-1 rounded-full border border-slate-100 z-10">
+               <button onClick={() => setPreviewTab('text')} className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'text' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Texto</button>
+               <button onClick={() => setPreviewTab('visual')} className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'visual' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Design</button>
+            </div>
+
             {previewTab === 'text' ? (
               loading ? (
                 <div className="space-y-4">
                   <div className="w-12 h-12 bg-emerald-50 rounded-full mx-auto animate-bounce flex items-center justify-center text-xl">🖋️</div>
-                  <p className="font-display italic text-slate-400">Consultando o Oráculo...</p>
+                  <p className="font-display italic text-slate-400">Consultando o Atelier...</p>
                 </div>
-              ) : inviteText ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4">
-                   <div className="font-display text-xl text-emerald-950 leading-relaxed whitespace-pre-wrap italic">{inviteText}</div>
-                   <button onClick={() => navigator.clipboard.writeText(inviteText)} className="mt-10 text-[9px] font-black text-emerald-700 uppercase tracking-widest">Copiar Caligrafia</button>
+              ) : generatedContent ? (
+                <div className="animate-in fade-in slide-in-from-bottom-4 w-full">
+                   <h5 className="text-[10px] font-black text-champagne uppercase tracking-[0.2em] mb-6">{creationType === 'invite' ? 'Sugestão de Caligrafia' : 'Descrição do Conceito'}</h5>
+                   <div className="font-display text-lg text-emerald-950 leading-relaxed whitespace-pre-wrap italic text-left max-h-[400px] overflow-y-auto pr-4">{generatedContent}</div>
+                   <button onClick={() => navigator.clipboard.writeText(generatedContent)} className="mt-10 text-[9px] font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-100 pb-1">Copiar Texto</button>
                 </div>
               ) : (
                 <div className="opacity-20 flex flex-col items-center">
                   <span className="text-6xl mb-4">📜</span>
-                  <p className="font-display italic">Aguardando sua inspiração.</p>
+                  <p className="font-display italic">Os dados da festa darão vida à poesia.</p>
                 </div>
               )
             ) : (
               loadingImage ? (
                 <div className="space-y-4">
                   <div className="w-12 h-12 bg-champagne/20 rounded-full mx-auto animate-pulse flex items-center justify-center text-xl">🎨</div>
-                  <p className="font-display italic text-slate-400">Pintando sua visão...</p>
+                  <p className="font-display italic text-slate-400">Criando o design perfeito...</p>
                 </div>
               ) : visualPreview ? (
                 <div className="w-full h-full p-4 animate-in zoom-in">
                   <div className="relative w-full h-full rounded-[40px] overflow-hidden shadow-inner border-8 border-white group">
-                    <img src={visualPreview} className="w-full h-full object-cover" alt="Visual Theme" />
+                    <img src={visualPreview} className="w-full h-full object-cover" alt="Invitation Design" />
+                    <div className="absolute inset-0 bg-emerald-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                       <p className="text-white text-[10px] font-black uppercase tracking-widest">Design Exclusivo Atelier</p>
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="opacity-20 flex flex-col items-center">
                   <span className="text-6xl mb-4">🖼️</span>
-                  <p className="font-display italic">Gere o conceito visual.</p>
+                  <p className="font-display italic">Gere o design para visualizar o convite.</p>
                 </div>
               )
             )}

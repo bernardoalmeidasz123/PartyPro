@@ -23,7 +23,7 @@ const App: React.FC = () => {
   const [pendingRequests, setPendingRequests] = useState<AccessRequest[]>([]);
   const [authView, setAuthView] = useState<'login' | 'request' | 'supplier-reg' | 'guest-confirmation' | 'supplier-login'>('login');
   
-  const MASTER_EMAIL = "bernardoalmeida01031981@gmail.com";
+  const MASTER_EMAIL = "bernardoalmeida19801955@gmail.com";
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

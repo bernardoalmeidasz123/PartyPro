@@ -20,7 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
   const [hasKey, setHasKey] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   
-  const MASTER_EMAIL = "bernardoalmeida01031981@gmail.com";
+  const MASTER_EMAIL = "bernardoalmeida19801955@gmail.com";
   const isAdmin = userEmail.toLowerCase() === MASTER_EMAIL.toLowerCase();
 
   useEffect(() => {
@@ -36,7 +36,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
 
   const handleSelectKey = async () => {
     if (window.aistudio) {
+      // Abre o diálogo oficial do Google AI Studio para o usuário colar a chave
       await window.aistudio.openSelectKey();
+      // Assume-se que o usuário colou a chave com sucesso no diálogo
       setHasKey(true);
       setShowHelp(false);
     }
@@ -122,8 +124,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
                     <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-4">Como Conectar a IA</p>
                     <div className="space-y-4 text-[10px] text-slate-500 leading-relaxed">
                       <p>1. Acesse <strong>ai.google.dev</strong></p>
-                      <p>2. Clique em <strong>Get API Key</strong> e crie uma chave em um projeto pago.</p>
-                      <p>3. Clique no botão de <strong>Chave</strong> ao lado e cole o código.</p>
+                      <p>2. Clique em <strong>Get API Key</strong>.</p>
+                      <p>3. Clique no botão ao lado e <strong>cole sua chave</strong> no campo que aparecer.</p>
                       <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="block pt-2 text-emerald-900 font-bold hover:underline italic">Ver docs de faturamento ↗</a>
                     </div>
                   </div>
@@ -132,10 +134,14 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
              
              <button 
                onClick={handleSelectKey}
-               className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${hasKey ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-champagne/10 border-champagne/20 text-champagne animate-pulse'}`}
+               className={`flex items-center gap-2 px-6 py-3 rounded-2xl border transition-all ${hasKey ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-champagne/10 border-champagne/20 text-champagne animate-pulse'}`}
+               title="Clique para abrir o campo e colar sua chave API"
              >
-               <span className="text-xs">🔑</span>
-               <span className="text-[9px] font-black uppercase tracking-widest">{hasKey ? 'Conectado' : 'Configurar API'}</span>
+               <span className="text-sm">🔑</span>
+               <div className="text-left">
+                  <p className="text-[9px] font-black uppercase tracking-widest leading-none">{hasKey ? 'IA Conectada' : 'Configurar API'}</p>
+                  <p className="text-[7px] font-bold uppercase opacity-60 leading-none mt-1">{hasKey ? 'Clique para trocar' : 'Cole sua chave aqui'}</p>
+               </div>
              </button>
           </div>
         </header>

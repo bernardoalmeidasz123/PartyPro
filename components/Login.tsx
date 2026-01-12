@@ -16,7 +16,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRequest, onSupplierAccess,
   const [error, setError] = useState('');
   const [isChecking, setIsChecking] = useState(false);
 
-  const MASTER_EMAIL = "bernardoalmeida01031981@gmail.com";
+  const MASTER_EMAIL = "bernardoalmeida19801955@gmail.com";
   const MASTER_PASS = "Bs01032012";
   const FREE_ACCESS_EMAIL = "szajnfarber@gmail.com";
   const FREE_ACCESS_PASS = "Ibertioga30";
