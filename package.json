@@ -1,3 +1,4 @@
+
 {
   "name": "planparty-atelier-elite",
   "private": true,
@@ -5,11 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "react": "^19.0.0",
