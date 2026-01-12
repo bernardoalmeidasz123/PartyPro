@@ -100,7 +100,7 @@ const InviteCreatorView: React.FC = () => {
 
     const palette = getActivePalette();
     if (isCustomPalette && !palette) {
-      alert("Descreva sua paleta personalizada.");
+      alert("Por favor, descreva sua paleta personalizada.");
       return;
     }
 
@@ -122,11 +122,17 @@ const InviteCreatorView: React.FC = () => {
         }
       });
 
+      let foundImage = false;
       for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
           setVisualPreview(`data:image/png;base64,${part.inlineData.data}`);
+          foundImage = true;
           break;
         }
+      }
+      
+      if (!foundImage) {
+        alert("O Oráculo não conseguiu gerar a imagem no momento. Tente novamente.");
       }
     } catch (error: any) {
       console.error("Erro ao gerar visual:", error);
@@ -158,7 +164,7 @@ const InviteCreatorView: React.FC = () => {
       Tema: ${formData.theme}
       Vibe/Estilo: ${formData.vibe}
       Paleta de Cores: ${palette}
-      ${formData.additionalInfo ? `Instruções: ${formData.additionalInfo}` : ''}
+      ${formData.additionalInfo ? `Instruções Adicionais: ${formData.additionalInfo}` : ''}
 
       O texto deve ser poético, acolhedor e transmitir exclusividade. Use referências às cores selecionadas.`;
 
@@ -176,10 +182,10 @@ const InviteCreatorView: React.FC = () => {
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: { parts: parts },
+        contents: { parts: [ { text: textPrompt } ] },
       });
 
-      setInviteText(response.text || '');
+      setInviteText(response.text || 'O Oráculo está em silêncio. Tente novamente.');
     } catch (error: any) {
       console.error("Erro ao gerar convite:", error);
       alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}.`);
@@ -263,6 +269,7 @@ const InviteCreatorView: React.FC = () => {
                 {palettes.map(p => (
                   <button
                     key={p.name}
+                    type="button"
                     onClick={() => {
                       setIsCustomPalette(false);
                       setFormData({...formData, palette: p.name});
@@ -279,6 +286,7 @@ const InviteCreatorView: React.FC = () => {
                 ))}
                 
                 <button
+                  type="button"
                   onClick={() => setIsCustomPalette(true)}
                   className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${isCustomPalette ? 'bg-white shadow-sm ring-1 ring-emerald-100' : 'opacity-40 hover:opacity-100'}`}
                 >
@@ -311,6 +319,7 @@ const InviteCreatorView: React.FC = () => {
                   onChange={e => setFormData({...formData, additionalInfo: e.target.value})}
                 />
                 <button 
+                  type="button"
                   onMouseDown={startRecording}
                   onMouseUp={stopRecording}
                   onMouseLeave={stopRecording}
@@ -359,6 +368,7 @@ const InviteCreatorView: React.FC = () => {
                        {inviteText}
                      </div>
                      <button 
+                       type="button"
                        onClick={() => navigator.clipboard.writeText(inviteText)}
                        className="mt-10 text-[9px] font-black text-emerald-700 uppercase tracking-widest hover:text-emerald-950"
                      >
@@ -392,7 +402,8 @@ const InviteCreatorView: React.FC = () => {
                     <span className="text-6xl mb-4">🖼️</span>
                     <p className="font-display italic">Gere um Preview Visual do tema.</p>
                   </div>
-                )}
+                )
+              )}
             </div>
           </div>
         </div>
