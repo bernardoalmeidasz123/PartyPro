@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 
@@ -37,11 +36,10 @@ const InviteCreatorView: React.FC = () => {
     { name: 'Bordeaux & Prata', colors: ['#4c0519', '#e5e7eb'] }
   ];
 
-  const getAIInstance = async () => {
+  const getAIInstance = () => {
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      if (window.aistudio) await window.aistudio.openSelectKey();
-      throw new Error("Chave de API não encontrada.");
+      throw new Error("Chave de API não configurada no ambiente.");
     }
     return new GoogleGenAI({ apiKey });
   };
@@ -55,8 +53,7 @@ const InviteCreatorView: React.FC = () => {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
-      mediaRecorder.onstop = async () => {
-        // Lógica de áudio para texto poderia ser implementada aqui se necessário
+      mediaRecorder.onstop = () => {
         stream.getTracks().forEach(track => track.stop());
       };
       mediaRecorder.start();
@@ -82,7 +79,7 @@ const InviteCreatorView: React.FC = () => {
     setLoadingImage(true);
     setPreviewTab('visual');
     try {
-      const ai = await getAIInstance();
+      const ai = getAIInstance();
       const palette = getActivePalette();
       const prompt = `Luxury event invitation for Anfitrião ${formData.clientName}, Location ${formData.location}, Date ${formData.date}. Colors: ${palette}. Style: Premium professional design, 4K high fidelity, gold foil details.`;
       
@@ -99,14 +96,11 @@ const InviteCreatorView: React.FC = () => {
       if (imagePart?.inlineData?.data) {
         setVisualPreview(`data:image/png;base64,${imagePart.inlineData.data}`);
       } else {
-        alert("O atelier não pôde gerar a imagem agora. Tente um prompt mais simples.");
+        alert("O atelier não pôde gerar a imagem agora. Tente novamente.");
       }
     } catch (error: any) {
-      if (error?.message?.includes("entity was not found") && window.aistudio) {
-        await window.aistudio.openSelectKey();
-      } else {
-        console.error("Erro na geração de imagem:", error);
-      }
+      console.error("Erro na geração de imagem:", error);
+      alert("Erro ao conectar com o estúdio de imagem.");
     } finally {
       setLoadingImage(false);
     }
@@ -119,7 +113,7 @@ const InviteCreatorView: React.FC = () => {
     setLoading(true);
     setPreviewTab('text');
     try {
-      const ai = await getAIInstance();
+      const ai = getAIInstance();
       const palette = getActivePalette();
       const textPrompt = creationType === 'cake_table' 
         ? `Descreva um conceito de mesa de bolo luxuosa na paleta ${palette} para ${formData.clientName} em ${formData.location}. Use tom poético e sofisticado.`
@@ -127,14 +121,13 @@ const InviteCreatorView: React.FC = () => {
       
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview', 
-        contents: textPrompt
+        contents: [{ parts: [{ text: textPrompt }] }]
       });
       
       setGeneratedContent(response.text || 'Falha na redação.');
     } catch (error: any) {
-      if (error?.message?.includes("entity was not found") && window.aistudio) {
-        await window.aistudio.openSelectKey();
-      }
+      console.error("Erro na geração de texto:", error);
+      alert("Erro ao conectar com o redator AI.");
     } finally {
       setLoading(false);
     }
