@@ -42,7 +42,7 @@ const InviteCreatorView: React.FC = () => {
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
       if (window.aistudio) await window.aistudio.openSelectKey();
-      throw new Error("API não configurada.");
+      throw new Error("Chave de API não encontrada.");
     }
     return new GoogleGenAI({ apiKey });
   };
@@ -53,11 +53,9 @@ const InviteCreatorView: React.FC = () => {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
-
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const reader = new FileReader();
@@ -68,7 +66,6 @@ const InviteCreatorView: React.FC = () => {
         };
         stream.getTracks().forEach(track => track.stop());
       };
-
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
@@ -87,39 +84,28 @@ const InviteCreatorView: React.FC = () => {
 
   const generateVisualPreview = async () => {
     if (!formData.clientName || !formData.date || !formData.location) {
-      return alert("Preencha Nome, Data e Local.");
+      return alert("Preencha os dados básicos primeiro.");
     }
-    
     setLoadingImage(true);
     setPreviewTab('visual');
     try {
       const ai = await getAIInstance();
       const palette = getActivePalette();
-      
-      const prompt = `Premium event invitation design for Anfitrião ${formData.clientName}, Local ${formData.location}, Data ${formData.date}. 
-      Palette: ${palette}. Professional card design, luxury materials, gold foil details, soft lighting, 4K high resolution.`;
-
+      const prompt = `Luxury event invitation for Anfitrião ${formData.clientName}, Location ${formData.location}, Date ${formData.date}. Colors: ${palette}. Style: Premium professional design, 4K high fidelity.`;
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image', // Modelo estável para imagens
+        model: 'gemini-2.5-flash-image', // Modelo estável
         contents: { parts: [{ text: prompt }] },
-        config: { 
-          imageConfig: { aspectRatio: "4:3" }
-        }
+        config: { imageConfig: { aspectRatio: "4:3" } }
       });
-
-      const parts = response.candidates?.[0]?.content?.parts;
-      const partWithImage = parts?.find(p => p.inlineData);
-      
+      const partWithImage = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
       if (partWithImage?.inlineData) {
         setVisualPreview(`data:image/png;base64,${partWithImage.inlineData.data}`);
       } else {
-        alert("Não foi possível gerar a imagem no momento.");
+        alert("O atelier não pôde gerar a imagem agora.");
       }
     } catch (error: any) {
-      if (error?.message?.includes("Requested entity was not found") && window.aistudio) {
+      if (error?.message?.includes("entity was not found") && window.aistudio) {
         await window.aistudio.openSelectKey();
-      } else {
-        console.error("Erro AI Imagem:", error);
       }
     } finally {
       setLoadingImage(false);
@@ -130,25 +116,21 @@ const InviteCreatorView: React.FC = () => {
     if (!formData.clientName || !formData.date || !formData.location) {
       return alert("Preencha Nome, Data e Local.");
     }
-    
     setLoading(true);
     setPreviewTab('text');
     try {
       const ai = await getAIInstance();
       const palette = getActivePalette();
-      
       const textPrompt = creationType === 'cake_table' 
-        ? `Descreva um conceito de mesa de bolo de luxo na paleta ${palette} para a festa de ${formData.clientName} em ${formData.location} no dia ${formData.date}. Seja poético e detalhista.`
-        : `Redija um texto elegante para um convite de luxo para ${formData.clientName}, no local ${formData.location}, data ${formData.date}, paleta ${palette}. Inclua uma frase de boas-vindas sofisticada.`;
-
+        ? `Descreva um conceito de mesa de bolo luxuosa na paleta ${palette} para ${formData.clientName} em ${formData.location}.`
+        : `Redija um convite de luxo para ${formData.clientName}, data ${formData.date}, local ${formData.location}, paleta ${palette}.`;
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash', // Modelo estável para texto
+        model: 'gemini-flash-latest', // Modelo estável
         contents: { parts: [{ text: textPrompt }] }
       });
-
-      setGeneratedContent(response.text || 'O atelier não pôde redigir o texto agora.');
+      setGeneratedContent(response.text || 'Falha na redação.');
     } catch (error: any) {
-      if (error?.message?.includes("Requested entity was not found") && window.aistudio) {
+      if (error?.message?.includes("entity was not found") && window.aistudio) {
         await window.aistudio.openSelectKey();
       }
     } finally {
@@ -157,137 +139,104 @@ const InviteCreatorView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 md:space-y-10 animate-in fade-in duration-700 pb-20">
+    <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-20">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="text-center md:text-left">
           <h2 className="text-3xl md:text-4xl font-display text-emerald-950">Atelier de Design AI</h2>
-          <p className="text-slate-500 mt-2 text-sm italic">Criando memórias com Gemini 2.5 Flash.</p>
+          <p className="text-slate-500 mt-2 text-sm italic">Criações exclusivas com Gemini estável.</p>
         </div>
-        
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl md:rounded-[24px] shadow-inner border border-slate-200 w-full md:w-auto">
-          <button 
-            onClick={() => setCreationType('invite')} 
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 md:py-2.5 rounded-xl md:rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'invite' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-emerald-900'}`}
-          >
-            Convite
-          </button>
-          <button 
-            onClick={() => setCreationType('cake_table')} 
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 md:py-2.5 rounded-xl md:rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'cake_table' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400 hover:text-emerald-900'}`}
-          >
-            Mesa do Bolo
-          </button>
+        <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full md:w-auto">
+          <button onClick={() => setCreationType('invite')} className={`flex-1 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'invite' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}>Convite</button>
+          <button onClick={() => setCreationType('cake_table')} className={`flex-1 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'cake_table' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}>Mesa</button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-10">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12">
         <div className="bg-white p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 shadow-sm space-y-6 md:space-y-8">
-          <div className="space-y-4 md:space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Anfitrião</label>
-                <input type="text" className="w-full p-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} placeholder="Ex: Ana e Bruno" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Data</label>
-                <input type="date" className="w-full p-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-100 text-xs outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Local da Festa</label>
-                <input type="text" className="w-full p-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Ex: Buffet Colonial" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Horário</label>
-                <input type="time" className="w-full p-4 rounded-xl md:rounded-2xl bg-slate-50 border border-slate-100 text-xs outline-none" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Paleta de Cores</label>
-              <div className="flex flex-wrap gap-2 md:gap-3 p-3 md:p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                {palettes.map(p => (
-                  <button key={p.name} type="button" onClick={() => {setIsCustomPalette(false); setFormData({...formData, palette: p.name});}} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${(!isCustomPalette && formData.palette === p.name) ? 'bg-white shadow-sm ring-1 ring-emerald-200' : 'opacity-40 hover:opacity-100'}`}>
-                    <div className="flex -space-x-1">
-                      {p.colors.map((c, i) => (<div key={i} className="w-6 h-6 rounded-full border border-white" style={{ backgroundColor: c }}></div>))}
-                    </div>
-                  </button>
-                ))}
-                <button type="button" onClick={() => setIsCustomPalette(true)} className={`flex flex-col items-center p-2 rounded-xl transition-all ${isCustomPalette ? 'bg-white shadow-sm ring-1 ring-emerald-200' : 'opacity-40'}`}>
-                  <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[8px]">🎨</div>
-                </button>
-              </div>
+              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Anfitrião</label>
+              <input type="text" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} placeholder="Nome" />
             </div>
-
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Instruções de Estilo</label>
-              <div className="relative">
-                <textarea rows={3} className="w-full p-4 pr-14 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm resize-none" value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})} placeholder="Minimalista, luxuoso, rústico..." />
-                <button type="button" onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={stopRecording} className={`absolute right-3 bottom-3 w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>
-                  🎙️
+              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Data</label>
+              <input type="date" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Local</label>
+              <input type="text" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Espaço" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Horário</label>
+              <input type="time" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs outline-none" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Cores</label>
+            <div className="flex flex-wrap gap-2 md:gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+              {palettes.map(p => (
+                <button key={p.name} onClick={() => {setIsCustomPalette(false); setFormData({...formData, palette: p.name});}} className={`flex items-center p-2 rounded-xl transition-all ${(!isCustomPalette && formData.palette === p.name) ? 'bg-white shadow-sm ring-1 ring-emerald-200' : 'opacity-40'}`}>
+                  <div className="flex -space-x-1">{p.colors.map((c, i) => (<div key={i} className="w-5 h-5 rounded-full border border-white" style={{ backgroundColor: c }}></div>))}</div>
                 </button>
-              </div>
+              ))}
+              <button onClick={() => setIsCustomPalette(true)} className={`p-2 rounded-xl transition-all ${isCustomPalette ? 'bg-white shadow-sm ring-1 ring-emerald-200' : 'opacity-40'}`}>🎨</button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Estilo</label>
+            <div className="relative">
+              <textarea rows={3} className="w-full p-4 pr-14 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm resize-none" value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})} placeholder="Dê orientações..." />
+              <button onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={stopRecording} className={`absolute right-3 bottom-3 w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>🎙️</button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button onClick={handleGenerateText} disabled={loading} className="py-4 md:py-5 bg-emerald-950 text-white rounded-xl md:rounded-[24px] font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 transition-all">
-              {loading ? 'Redigindo...' : '✨ Redigir Texto'}
+              {loading ? 'Redigindo...' : '✨ Redigir'}
             </button>
             <button onClick={generateVisualPreview} disabled={loadingImage} className="py-4 md:py-5 bg-champagne text-emerald-950 rounded-xl md:rounded-[24px] font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 transition-all">
-              {loadingImage ? 'Gerando...' : '🎨 Gerar Design'}
+              {loadingImage ? 'Gerando...' : '🎨 Visual'}
             </button>
           </div>
         </div>
 
-        <div className="relative group min-h-[400px] md:min-h-[500px]">
-          <div className="absolute -inset-1 bg-gradient-to-r from-champagne/10 to-emerald-500/10 rounded-[40px] md:rounded-[60px] blur opacity-25"></div>
-          <div className="relative bg-white h-full rounded-[40px] md:rounded-[60px] border border-slate-100 shadow-xl overflow-hidden flex flex-col p-8 md:p-12 items-center justify-center text-center">
-            
-            <div className="absolute top-8 flex gap-2 bg-slate-50 p-1 rounded-full border border-slate-100 z-10">
-               <button onClick={() => setPreviewTab('text')} className={`px-5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'text' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Texto</button>
-               <button onClick={() => setPreviewTab('visual')} className={`px-5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'visual' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Visual</button>
-            </div>
-
-            {previewTab === 'text' ? (
-              loading ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="w-10 h-10 bg-emerald-50 rounded-full mx-auto"></div>
-                  <p className="font-display italic text-slate-400">O atelier está redigindo...</p>
-                </div>
-              ) : generatedContent ? (
-                <div className="animate-in fade-in duration-500 w-full">
-                   <h5 className="text-[9px] font-black text-champagne uppercase tracking-[0.2em] mb-6">Sugestão Profissional</h5>
-                   <div className="font-display text-base md:text-lg text-emerald-950 leading-relaxed whitespace-pre-wrap italic text-left max-h-[300px] overflow-y-auto pr-4">{generatedContent}</div>
-                   <button onClick={() => navigator.clipboard.writeText(generatedContent)} className="mt-8 text-[8px] font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-100">Copiar Texto</button>
-                </div>
-              ) : (
-                <div className="opacity-20 flex flex-col items-center">
-                  <span className="text-6xl mb-4">📜</span>
-                  <p className="font-display italic">Os dados da festa darão vida à poesia.</p>
-                </div>
-              )
-            ) : (
-              loadingImage ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="w-10 h-10 bg-champagne/10 rounded-full mx-auto"></div>
-                  <p className="font-display italic text-slate-400">Gerando visual estável...</p>
-                </div>
-              ) : visualPreview ? (
-                <div className="w-full h-full p-2 md:p-4 animate-in zoom-in">
-                  <div className="relative w-full h-full rounded-[32px] overflow-hidden shadow-inner border-4 border-white">
-                    <img src={visualPreview} className="w-full h-full object-cover" alt="Invitation" />
-                  </div>
-                </div>
-              ) : (
-                <div className="opacity-20 flex flex-col items-center">
-                  <span className="text-6xl mb-4">🖼️</span>
-                  <p className="font-display italic">Visualize o design do seu convite.</p>
-                </div>
-              )}
+        <div className="relative bg-white min-h-[400px] rounded-[40px] md:rounded-[60px] border border-slate-100 shadow-xl overflow-hidden flex flex-col items-center justify-center text-center p-8 md:p-12">
+          <div className="absolute top-8 flex gap-2 bg-slate-50 p-1 rounded-full border border-slate-100 z-10">
+            <button onClick={() => setPreviewTab('text')} className={`px-5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'text' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Texto</button>
+            <button onClick={() => setPreviewTab('visual')} className={`px-5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'visual' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Visual</button>
           </div>
+
+          {previewTab === 'text' ? (
+            loading ? (
+              <div className="animate-pulse space-y-4">
+                <div className="w-10 h-10 bg-emerald-50 rounded-full mx-auto"></div>
+                <p className="font-display italic text-slate-400">Atelier redigindo...</p>
+              </div>
+            ) : generatedContent ? (
+              <div className="animate-in fade-in duration-500 w-full text-left">
+                <h5 className="text-[9px] font-black text-champagne uppercase tracking-widest mb-6">Sugestão Elite</h5>
+                <div className="font-display text-base md:text-lg text-emerald-950 leading-relaxed italic whitespace-pre-wrap max-h-[300px] overflow-y-auto pr-4">{generatedContent}</div>
+                <button onClick={() => navigator.clipboard.writeText(generatedContent)} className="mt-8 text-[8px] font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-100">Copiar Texto</button>
+              </div>
+            ) : (
+              <div className="opacity-20 flex flex-col items-center"><span className="text-6xl mb-4">📜</span><p className="font-display italic">Aguardando dados...</p></div>
+            )
+          ) : (
+            loadingImage ? (
+              <div className="animate-pulse space-y-4">
+                <div className="w-10 h-10 bg-champagne/10 rounded-full mx-auto"></div>
+                <p className="font-display italic text-slate-400">Criando visão 4K...</p>
+              </div>
+            ) : visualPreview ? (
+              <div className="w-full h-full p-4 animate-in zoom-in">
+                <div className="relative w-full h-full rounded-[32px] overflow-hidden shadow-inner border-4 border-white"><img src={visualPreview} className="w-full h-full object-cover" alt="Invite" /></div>
+              </div>
+            ) : (
+              <div className="opacity-20 flex flex-col items-center"><span className="text-6xl mb-4">🖼️</span><p className="font-display italic">Gerar design para visualizar.</p></div>
+            )
+          )}
         </div>
       </div>
     </div>
