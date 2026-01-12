@@ -28,14 +28,14 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
   const selectedEvent = events.find(e => e.id === selectedEventId);
 
   const checkAndGetAI = async () => {
-    if (window.aistudio) {
-      const hasKey = await window.aistudio.hasSelectedApiKey();
-      if (!hasKey) {
-        await window.aistudio.openSelectKey();
-      }
-    }
     const apiKey = process.env.API_KEY;
-    if (!apiKey) throw new Error("Chave de API necessária.");
+    if (!apiKey) {
+      if (window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey) await window.aistudio.openSelectKey();
+      }
+      throw new Error("Chave de API necessária.");
+    }
     return new GoogleGenAI({ apiKey });
   };
 
@@ -47,14 +47,14 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       const prompt = `Crie um convite de luxo para "${selectedEvent.title}" de ${selectedEvent.clientName}. Tema: ${selectedEvent.theme}. Data: ${selectedEvent.date}. Horário: ${selectedEvent.time}. Local: ${selectedEvent.location}.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-flash-latest',
         contents: prompt,
       });
 
       const text = response.text || '';
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, aiInviteText: text } : ev));
     } catch (error: any) {
-      if (error?.message?.includes("Requested entity was not found") && window.aistudio) {
+      if (error?.message?.includes("entity was not found") && window.aistudio) {
         await window.aistudio.openSelectKey();
       } else {
         alert("Erro na IA: " + error.message);

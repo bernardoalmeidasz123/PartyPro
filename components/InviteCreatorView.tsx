@@ -93,7 +93,7 @@ const InviteCreatorView: React.FC = () => {
       const palette = getActivePalette();
       const prompt = `Luxury event invitation for Anfitrião ${formData.clientName}, Location ${formData.location}, Date ${formData.date}. Colors: ${palette}. Style: Premium professional design, 4K high fidelity.`;
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image', // Modelo estável
+        model: 'gemini-2.5-flash-image', 
         contents: { parts: [{ text: prompt }] },
         config: { imageConfig: { aspectRatio: "4:3" } }
       });
@@ -125,7 +125,7 @@ const InviteCreatorView: React.FC = () => {
         ? `Descreva um conceito de mesa de bolo luxuosa na paleta ${palette} para ${formData.clientName} em ${formData.location}.`
         : `Redija um convite de luxo para ${formData.clientName}, data ${formData.date}, local ${formData.location}, paleta ${palette}.`;
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest', // Modelo estável
+        model: 'gemini-flash-latest', 
         contents: { parts: [{ text: textPrompt }] }
       });
       setGeneratedContent(response.text || 'Falha na redação.');
