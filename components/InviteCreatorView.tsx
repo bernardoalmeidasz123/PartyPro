@@ -83,7 +83,10 @@ const InviteCreatorView: React.FC = () => {
 
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) throw new Error("A variável API_KEY não foi encontrada. Configure-a na Vercel.");
+
+      const ai = new GoogleGenAI({ apiKey });
       
       const textPrompt = `Você é um redator de convites de luxo para um Atelier de Festas Elite. 
       Crie um convite deslumbrante em português para:
@@ -117,9 +120,9 @@ const InviteCreatorView: React.FC = () => {
       });
 
       setInviteText(response.text || '');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao gerar convite:", error);
-      alert("Ocorreu um erro ao conectar com o Oráculo AI. Verifique sua conexão.");
+      alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}. Verifique se sua chave de API é válida.`);
     } finally {
       setLoading(false);
     }

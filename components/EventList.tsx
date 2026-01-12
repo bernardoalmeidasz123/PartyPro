@@ -31,7 +31,10 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
     if (!selectedEvent) return;
     setIsGeneratingInvite(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) throw new Error("API_KEY não configurada nas variáveis de ambiente.");
+      
+      const ai = new GoogleGenAI({ apiKey });
       const prompt = `Crie um convite de luxo para o evento "${selectedEvent.title}" da cliente ${selectedEvent.clientName}. 
       Tema: ${selectedEvent.theme}. 
       Data: ${new Date(selectedEvent.date).toLocaleDateString('pt-BR')}. 
@@ -46,9 +49,9 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
       const text = response.text || '';
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, aiInviteText: text } : ev));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao gerar convite:", error);
-      alert("O Atelier AI está descansando. Tente novamente em instantes.");
+      alert(`O Atelier AI falhou: ${error?.message || "Erro de conexão"}. Verifique se sua API Key está correta na Vercel.`);
     } finally {
       setIsGeneratingInvite(false);
     }
@@ -58,7 +61,10 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
     if (!selectedEvent || !selectedEvent.location) return;
     setIsLocating(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) throw new Error("API_KEY não configurada.");
+
+      const ai = new GoogleGenAI({ apiKey });
       
       let lat: number | undefined, lng: number | undefined;
       try {
@@ -89,7 +95,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
         locationMapUrl: mapUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.location)}`,
         locationDetails: details
       } : ev));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao localizar:", error);
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { 
         ...ev, 
