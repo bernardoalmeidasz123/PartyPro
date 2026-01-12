@@ -50,7 +50,7 @@ export interface AccessRequest {
   generatedPassword?: string; 
 }
 
-export type ViewType = 'dashboard' | 'calendar' | 'events' | 'suppliers' | 'ai-helper' | 'approvals';
+export type ViewType = 'dashboard' | 'calendar' | 'events' | 'suppliers' | 'ai-helper' | 'approvals' | 'invite-creator';
 
 export interface UserAccess {
   email: string;

@@ -11,6 +11,7 @@ import SupplierRegistrationView from './components/SupplierRegistrationView';
 import SupplierListView from './components/SupplierListView';
 import GuestConfirmationView from './components/GuestConfirmationView';
 import SupplierLoginView from './components/SupplierLoginView';
+import InviteCreatorView from './components/InviteCreatorView';
 import { EventParty, ViewType, AccessRequest, Supplier } from './types';
 
 const App: React.FC = () => {
@@ -204,6 +205,7 @@ const App: React.FC = () => {
       case 'dashboard': return <Dashboard events={events} />;
       case 'calendar': return <CalendarView events={events} />;
       case 'events': return <EventList events={events} setEvents={setEvents} />;
+      case 'invite-creator': return <InviteCreatorView />;
       case 'suppliers': return <SupplierListView suppliers={suppliers} setSuppliers={setSuppliers} />;
       case 'approvals': 
         return <AdminApprovalView requests={pendingRequests} onApprove={handleApproveRequest} onReject={handleRejectRequest} onRevoke={handleRevokeAccess} />;

@@ -60,8 +60,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onGoToRequest, onSupplierAccess,
 
   const benefits = [
     { icon: '📅', title: 'Agenda 2026-2030', desc: 'Visualize o futuro e garanta datas com anos de antecedência.' },
+    { icon: '🖋️', title: 'Estúdio de Convites AI', desc: 'Crie textos deslumbrantes e poéticos com o poder do Gemini AI.' },
     { icon: '💎', title: 'Lucro de Atelier', desc: 'Controle de custos e venda com precisão de mestre.' },
-    { icon: '🎟️', title: 'RSVP Ilimitado', desc: 'Links de confirmação elegantes para todos os seus eventos.' },
     { icon: '🤝', title: 'Rede de Parceiros', desc: 'Organize seus fornecedores em um só ecossistema.' },
     { icon: '📈', title: 'Visão de Negócio', desc: 'Relatórios que mostram o crescimento real do seu trabalho.' },
     { icon: '♾️', title: 'Acesso Vitalício', desc: 'Pague uma vez, use para sempre. Sem mensalidades.' },

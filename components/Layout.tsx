@@ -30,6 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
     { id: 'dashboard', label: 'Resumo', icon: '🍷' },
     { id: 'calendar', label: 'Minha Agenda', icon: '📅' },
     { id: 'events', label: 'Criações', icon: '✨' },
+    { id: 'invite-creator', label: 'Estúdio AI', icon: '✍️' },
     { id: 'suppliers', label: 'Parceiros', icon: '🤝' },
     { id: 'ai-helper', label: 'Evolução', icon: '📈' },
   ];
