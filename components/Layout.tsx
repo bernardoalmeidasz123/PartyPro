@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { ViewType } from '../types';
 import Logo from './Logo';
 
+declare var window: any;
+
 interface LayoutProps {
   children: React.ReactNode;
   activeView: ViewType;
@@ -15,6 +17,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, userEmail, onLogout, pendingCount = 0 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [greeting, setGreeting] = useState('');
+  const [hasKey, setHasKey] = useState(false);
   
   const MASTER_EMAIL = "bernardoalmeida01031981@gmail.com";
   const isAdmin = userEmail.toLowerCase() === MASTER_EMAIL.toLowerCase();
@@ -24,7 +27,20 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
     if (hour < 12) setGreeting('Bom dia');
     else if (hour < 18) setGreeting('Boa tarde');
     else setGreeting('Boa noite');
+
+    // Verificar se já existe uma chave selecionada
+    if (window.aistudio) {
+      window.aistudio.hasSelectedApiKey().then((val: boolean) => setHasKey(val));
+    }
   }, []);
+
+  const handleSelectKey = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      // Assume sucesso conforme as diretrizes
+      setHasKey(true);
+    }
+  };
 
   const menuItems = [
     { id: 'dashboard', label: 'Resumo', icon: '🍷' },
@@ -92,10 +108,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
               <h2 className="text-xl font-display text-emerald-950 mt-1">Qual sonho vamos planejar hoje?</h2>
             </div>
           </div>
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-4">
+             <button 
+               onClick={handleSelectKey}
+               className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${hasKey ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-champagne/10 border-champagne/20 text-champagne animate-pulse'}`}
+             >
+               <span className="text-xs">🔑</span>
+               <span className="text-[9px] font-black uppercase tracking-widest">{hasKey ? 'Conectado' : 'Configurar API'}</span>
+             </button>
              <div className="px-5 py-2 rounded-full border border-slate-100 bg-white flex items-center gap-3 shadow-sm">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ecossistema Elite Conectado</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ecossistema Elite</span>
              </div>
           </div>
         </header>

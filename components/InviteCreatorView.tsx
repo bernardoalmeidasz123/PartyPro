@@ -47,9 +47,10 @@ const InviteCreatorView: React.FC = () => {
       }
     }
     
+    // O process.env.API_KEY é injetado automaticamente pelo seletor
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      throw new Error("Por favor, selecione uma Chave de API no seletor do Atelier.");
+      throw new Error("Chave de API não configurada. Por favor, clique em 'Configurar API' no topo.");
     }
     
     return new GoogleGenAI({ apiKey });
@@ -136,14 +137,7 @@ const InviteCreatorView: React.FC = () => {
     try {
       const ai = await checkAndGetAI();
       const palette = getActivePalette();
-      const textPrompt = `Aja como um redator de convites de altíssimo luxo. Redija um convite exclusivo em português para o evento "${formData.eventTitle}" da cliente ${formData.clientName}. 
-      Tema: ${formData.theme}. 
-      Data: ${formData.date} às ${formData.time}. 
-      Local: ${formData.location}.
-      Paleta de Cores do Evento: ${palette}. 
-      Estilo/Vibe: ${formData.vibe}. 
-      Instruções extras do cliente: ${formData.additionalInfo}. 
-      Seja poético, sofisticado e use referências às cores e ao tema.`;
+      const textPrompt = `Redija um convite de luxo exclusivo em português para o evento "${formData.eventTitle}" da cliente ${formData.clientName}. Tema: ${formData.theme}. Data: ${formData.date} às ${formData.time}. Local: ${formData.location}. Paleta: ${palette}. Estilo: ${formData.vibe}. Instruções extras: ${formData.additionalInfo}. Seja poético e sofisticado.`;
 
       const parts: any[] = [{ text: textPrompt }];
       if (audioBase64) {
@@ -222,14 +216,14 @@ const InviteCreatorView: React.FC = () => {
                 </button>
               </div>
               {isCustomPalette && (
-                <input type="text" className="w-full p-4 mt-2 rounded-2xl bg-emerald-50 border border-emerald-100 text-sm focus:ring-2 focus:ring-emerald-200 outline-none transition-all" placeholder="Descreva sua paleta (ex: Azul Serenity e Bronze)..." value={formData.customPaletteText} onChange={e => setFormData({...formData, customPaletteText: e.target.value})} />
+                <input type="text" className="w-full p-4 mt-2 rounded-2xl bg-emerald-50 border border-emerald-100 text-sm outline-none" placeholder="Descreva sua paleta..." value={formData.customPaletteText} onChange={e => setFormData({...formData, customPaletteText: e.target.value})} />
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instruções de Voz ou Texto</label>
               <div className="relative">
-                <textarea rows={2} className="w-full p-5 pr-14 rounded-[28px] bg-slate-50 border border-slate-100 outline-none text-sm resize-none" placeholder="Desejos extras para o Oráculo..." value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})} />
+                <textarea rows={2} className="w-full p-5 pr-14 rounded-[28px] bg-slate-50 border border-slate-100 outline-none text-sm resize-none" placeholder="Desejos extras..." value={formData.additionalInfo} onChange={e => setFormData({...formData, additionalInfo: e.target.value})} />
                 <button type="button" onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={stopRecording} className={`absolute right-4 bottom-4 w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : audioBase64 ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
                   {isRecording ? '⏺️' : audioBase64 ? '✅' : '🎙️'}
                 </button>
@@ -238,10 +232,10 @@ const InviteCreatorView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button onClick={handleGenerateText} disabled={loading} className="py-5 bg-emerald-950 text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-emerald-900 transition-all">
+            <button onClick={handleGenerateText} disabled={loading} className="py-5 bg-emerald-950 text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
               {loading ? <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : '✨ Redigir Texto'}
             </button>
-            <button onClick={generateVisualPreview} disabled={loadingImage} className="py-5 bg-champagne text-emerald-950 rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-white transition-all">
+            <button onClick={generateVisualPreview} disabled={loadingImage} className="py-5 bg-champagne text-emerald-950 rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
               {loadingImage ? <span className="w-3 h-3 border-2 border-emerald-950/20 border-t-emerald-950 rounded-full animate-spin"></span> : '🎨 Preview Visual'}
             </button>
           </div>
@@ -259,7 +253,7 @@ const InviteCreatorView: React.FC = () => {
               ) : inviteText ? (
                 <div className="animate-in fade-in slide-in-from-bottom-4">
                    <div className="font-display text-xl text-emerald-950 leading-relaxed whitespace-pre-wrap italic">{inviteText}</div>
-                   <button onClick={() => navigator.clipboard.writeText(inviteText)} className="mt-10 text-[9px] font-black text-emerald-700 uppercase tracking-widest hover:text-emerald-950">Copiar Caligrafia</button>
+                   <button onClick={() => navigator.clipboard.writeText(inviteText)} className="mt-10 text-[9px] font-black text-emerald-700 uppercase tracking-widest">Copiar Caligrafia</button>
                 </div>
               ) : (
                 <div className="opacity-20 flex flex-col items-center">
@@ -277,9 +271,6 @@ const InviteCreatorView: React.FC = () => {
                 <div className="w-full h-full p-4 animate-in zoom-in">
                   <div className="relative w-full h-full rounded-[40px] overflow-hidden shadow-inner border-8 border-white group">
                     <img src={visualPreview} className="w-full h-full object-cover" alt="Visual Theme" />
-                    <div className="absolute bottom-4 left-4 right-4 bg-white/80 backdrop-blur px-4 py-2 rounded-xl border border-white/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[8px] font-black uppercase text-emerald-900 tracking-widest">Inspiration Board</p>
-                    </div>
                   </div>
                 </div>
               ) : (
