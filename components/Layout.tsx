@@ -18,6 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [hasKey, setHasKey] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   
   const MASTER_EMAIL = "bernardoalmeida01031981@gmail.com";
   const isAdmin = userEmail.toLowerCase() === MASTER_EMAIL.toLowerCase();
@@ -28,7 +29,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
     else if (hour < 18) setGreeting('Boa tarde');
     else setGreeting('Boa noite');
 
-    // Verificar se já existe uma chave selecionada
     if (window.aistudio) {
       window.aistudio.hasSelectedApiKey().then((val: boolean) => setHasKey(val));
     }
@@ -37,8 +37,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
   const handleSelectKey = async () => {
     if (window.aistudio) {
       await window.aistudio.openSelectKey();
-      // Assume sucesso conforme as diretrizes
       setHasKey(true);
+      setShowHelp(false);
     }
   };
 
@@ -108,7 +108,28 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
               <h2 className="text-xl font-display text-emerald-950 mt-1">Qual sonho vamos planejar hoje?</h2>
             </div>
           </div>
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-4 relative">
+             <div className="relative group">
+                <button 
+                  onMouseEnter={() => setShowHelp(true)}
+                  onMouseLeave={() => setShowHelp(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all border border-transparent hover:border-emerald-100"
+                >
+                  ?
+                </button>
+                {showHelp && (
+                  <div className="absolute top-12 right-0 w-64 bg-white p-6 rounded-[32px] shadow-2xl border border-slate-100 z-[60] animate-in fade-in slide-in-from-top-2">
+                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-4">Como Conectar a IA</p>
+                    <div className="space-y-4 text-[10px] text-slate-500 leading-relaxed">
+                      <p>1. Acesse <strong>ai.google.dev</strong></p>
+                      <p>2. Clique em <strong>Get API Key</strong> e crie uma chave em um projeto pago.</p>
+                      <p>3. Clique no botão de <strong>Chave</strong> ao lado e cole o código.</p>
+                      <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="block pt-2 text-emerald-900 font-bold hover:underline italic">Ver docs de faturamento ↗</a>
+                    </div>
+                  </div>
+                )}
+             </div>
+             
              <button 
                onClick={handleSelectKey}
                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${hasKey ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-champagne/10 border-champagne/20 text-champagne animate-pulse'}`}
@@ -116,10 +137,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
                <span className="text-xs">🔑</span>
                <span className="text-[9px] font-black uppercase tracking-widest">{hasKey ? 'Conectado' : 'Configurar API'}</span>
              </button>
-             <div className="px-5 py-2 rounded-full border border-slate-100 bg-white flex items-center gap-3 shadow-sm">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ecossistema Elite</span>
-             </div>
           </div>
         </header>
 

@@ -47,10 +47,9 @@ const InviteCreatorView: React.FC = () => {
       }
     }
     
-    // O process.env.API_KEY é injetado automaticamente pelo seletor
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      throw new Error("Chave de API não configurada. Por favor, clique em 'Configurar API' no topo.");
+      throw new Error("Chave de API não configurada. Por favor, siga as instruções no topo.");
     }
     
     return new GoogleGenAI({ apiKey });
@@ -173,6 +172,24 @@ const InviteCreatorView: React.FC = () => {
            <button onClick={() => setPreviewTab('visual')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewTab === 'visual' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}>Visual</button>
         </div>
       </header>
+
+      {/* Tutorial Card */}
+      <div className="p-8 bg-emerald-50/50 rounded-[40px] border border-emerald-100 flex flex-col md:flex-row items-center gap-8 shadow-sm">
+        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-3xl shadow-sm border border-emerald-50 shrink-0">🗝️</div>
+        <div className="space-y-2 text-center md:text-left">
+          <h4 className="text-[11px] font-black text-emerald-900 uppercase tracking-widest">Ativação da Inteligência Atelier</h4>
+          <p className="text-xs text-emerald-800 leading-relaxed opacity-80">
+            Para redigir convites e gerar previews visuais, você precisa de uma chave Gemini. 
+            Acesse <a href="https://ai.google.dev" target="_blank" rel="noreferrer" className="font-bold underline decoration-champagne">ai.google.dev</a>, gere sua chave e clique no botão de <strong>Chave</strong> no topo da página para colar.
+          </p>
+        </div>
+        <button 
+          onClick={() => window.aistudio?.openSelectKey()}
+          className="px-8 py-3 bg-emerald-950 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-900 transition-all shadow-lg"
+        >
+          Configurar Chave Agora
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
         <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm space-y-8">
