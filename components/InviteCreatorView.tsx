@@ -13,6 +13,7 @@ const InviteCreatorView: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [previewTab, setPreviewTab] = useState<'text' | 'visual'>('text');
+  const [isCustomPalette, setIsCustomPalette] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -26,6 +27,7 @@ const InviteCreatorView: React.FC = () => {
     theme: '',
     vibe: 'Clássico Sofisticado',
     palette: 'Esmeralda & Ouro',
+    customPaletteText: '',
     additionalInfo: ''
   });
 
@@ -40,11 +42,9 @@ const InviteCreatorView: React.FC = () => {
   ];
 
   const checkAndGetAI = async () => {
-    // Verifica se já existe uma chave selecionada no ambiente AI Studio/Atelier
     if (window.aistudio && !(await window.aistudio.hasSelectedApiKey())) {
       await window.aistudio.openSelectKey();
     }
-    // Cria nova instância garantindo que use a chave atualizada de process.env.API_KEY
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
   };
 
@@ -88,9 +88,19 @@ const InviteCreatorView: React.FC = () => {
     }
   };
 
+  const getActivePalette = () => {
+    return isCustomPalette ? formData.customPaletteText : formData.palette;
+  };
+
   const generateVisualPreview = async () => {
     if (!formData.theme) {
       alert("Defina um tema antes de gerar a visualização do atelier.");
+      return;
+    }
+
+    const palette = getActivePalette();
+    if (isCustomPalette && !palette) {
+      alert("Descreva sua paleta personalizada.");
       return;
     }
 
@@ -99,7 +109,7 @@ const InviteCreatorView: React.FC = () => {
     try {
       const ai = await checkAndGetAI();
       const prompt = `A high-end, luxury event decoration concept for a party themed "${formData.theme}". 
-      Color palette: ${formData.palette}. 
+      Color palette: ${palette}. 
       Style: ${formData.vibe}. 
       The image should look like a professional event designer's 3D render or a high-fashion photograph of a ballroom. 
       Include elegant floral arrangements, sophisticated lighting, and premium furniture. Cinematic lighting, 8k resolution, ultra-detailed.`;
@@ -120,7 +130,7 @@ const InviteCreatorView: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Erro ao gerar visual:", error);
-      alert(`Falha no Preview Visual: ${error?.message || "Erro desconhecido"}. Certifique-se de que selecionou sua chave.`);
+      alert(`Falha no Preview Visual: ${error?.message || "Erro desconhecido"}.`);
     } finally {
       setLoadingImage(false);
     }
@@ -131,6 +141,8 @@ const InviteCreatorView: React.FC = () => {
       alert("Por favor, preencha pelo menos o título e a data do evento.");
       return;
     }
+
+    const palette = getActivePalette();
 
     setLoading(true);
     setPreviewTab('text');
@@ -145,7 +157,7 @@ const InviteCreatorView: React.FC = () => {
       Local: ${formData.location}
       Tema: ${formData.theme}
       Vibe/Estilo: ${formData.vibe}
-      Paleta de Cores: ${formData.palette}
+      Paleta de Cores: ${palette}
       ${formData.additionalInfo ? `Instruções: ${formData.additionalInfo}` : ''}
 
       O texto deve ser poético, acolhedor e transmitir exclusividade. Use referências às cores selecionadas.`;
@@ -170,7 +182,7 @@ const InviteCreatorView: React.FC = () => {
       setInviteText(response.text || '');
     } catch (error: any) {
       console.error("Erro ao gerar convite:", error);
-      alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}. Certifique-se de que selecionou sua chave.`);
+      alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}.`);
     } finally {
       setLoading(false);
     }
@@ -251,8 +263,11 @@ const InviteCreatorView: React.FC = () => {
                 {palettes.map(p => (
                   <button
                     key={p.name}
-                    onClick={() => setFormData({...formData, palette: p.name})}
-                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${formData.palette === p.name ? 'bg-white shadow-sm ring-1 ring-emerald-100' : 'opacity-40 hover:opacity-100'}`}
+                    onClick={() => {
+                      setIsCustomPalette(false);
+                      setFormData({...formData, palette: p.name});
+                    }}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${(!isCustomPalette && formData.palette === p.name) ? 'bg-white shadow-sm ring-1 ring-emerald-100' : 'opacity-40 hover:opacity-100'}`}
                   >
                     <div className="flex -space-x-1.5">
                       {p.colors.map((c, i) => (
@@ -262,7 +277,27 @@ const InviteCreatorView: React.FC = () => {
                     <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500">{p.name}</span>
                   </button>
                 ))}
+                
+                <button
+                  onClick={() => setIsCustomPalette(true)}
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${isCustomPalette ? 'bg-white shadow-sm ring-1 ring-emerald-100' : 'opacity-40 hover:opacity-100'}`}
+                >
+                  <div className="w-12 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px]">🎨</div>
+                  <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500">Outra</span>
+                </button>
               </div>
+
+              {isCustomPalette && (
+                <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
+                  <input 
+                    type="text" 
+                    className="w-full p-4 rounded-2xl bg-emerald-50 border border-emerald-100 focus:bg-white outline-none transition-all text-sm font-medium placeholder:text-emerald-900/30"
+                    placeholder="Descreva a paleta (ex: Tons pastéis e Prata)"
+                    value={formData.customPaletteText}
+                    onChange={e => setFormData({...formData, customPaletteText: e.target.value})}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -357,8 +392,7 @@ const InviteCreatorView: React.FC = () => {
                     <span className="text-6xl mb-4">🖼️</span>
                     <p className="font-display italic">Gere um Preview Visual do tema.</p>
                   </div>
-                )
-              )}
+                )}
             </div>
           </div>
         </div>
