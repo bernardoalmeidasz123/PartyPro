@@ -17,6 +17,11 @@
         .bg-emerald-deep { background-color: var(--emerald-deep); }
         .text-champagne { color: var(--champagne); }
         .border-champagne { border-color: var(--champagne); }
+        
+        /* Custom scrollbar for luxury feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #fdfcfb; }
+        ::-webkit-scrollbar-thumb { background: #022c22; border-radius: 10px; }
     </style>
 <script type="importmap">
 {
@@ -27,7 +32,7 @@
     "recharts": "https://esm.sh/recharts@^3.6.0",
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai@0.2.1"
+    "@google/genai": "https://esm.sh/@google/genai"
   }
 }
 </script>

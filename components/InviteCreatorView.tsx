@@ -6,9 +6,12 @@ declare var process: { env: { [key: string]: string } };
 
 const InviteCreatorView: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
   const [inviteText, setInviteText] = useState('');
+  const [visualPreview, setVisualPreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
+  const [previewTab, setPreviewTab] = useState<'text' | 'visual'>('text');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -75,18 +78,54 @@ const InviteCreatorView: React.FC = () => {
     }
   };
 
-  const handleGenerate = async () => {
+  const generateVisualPreview = async () => {
+    if (!formData.theme) {
+      alert("Defina um tema antes de gerar a visualização do atelier.");
+      return;
+    }
+
+    setLoadingImage(true);
+    setPreviewTab('visual');
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `A high-end, luxury event decoration concept for a party themed "${formData.theme}". 
+      Color palette: ${formData.palette}. 
+      Style: ${formData.vibe}. 
+      The image should look like a professional event designer's 3D render or a high-fashion photograph of a ballroom. 
+      Include elegant floral arrangements, sophisticated lighting, and premium furniture. Cinematic lighting, 8k resolution, ultra-detailed.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          imageConfig: { aspectRatio: "4:3" }
+        }
+      });
+
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          setVisualPreview(`data:image/png;base64,${part.inlineData.data}`);
+          break;
+        }
+      }
+    } catch (error: any) {
+      console.error("Erro ao gerar visual:", error);
+      alert("Não foi possível gerar a prévia visual no momento.");
+    } finally {
+      setLoadingImage(false);
+    }
+  };
+
+  const handleGenerateText = async () => {
     if (!formData.eventTitle || !formData.date) {
       alert("Por favor, preencha pelo menos o título e a data do evento.");
       return;
     }
 
     setLoading(true);
+    setPreviewTab('text');
     try {
-      const apiKey = process.env.API_KEY;
-      if (!apiKey) throw new Error("A variável API_KEY não foi encontrada. Configure-a na Vercel.");
-
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const textPrompt = `Você é um redator de convites de luxo para um Atelier de Festas Elite. 
       Crie um convite deslumbrante em português para:
@@ -96,11 +135,10 @@ const InviteCreatorView: React.FC = () => {
       Local: ${formData.location}
       Tema: ${formData.theme}
       Vibe/Estilo: ${formData.vibe}
-      Paleta de Cores Selecionada: ${formData.palette}
-      Inspirações Adicionais do Decorador: ${formData.additionalInfo}
+      Paleta de Cores: ${formData.palette}
+      ${formData.additionalInfo ? `Instruções: ${formData.additionalInfo}` : ''}
 
-      O texto deve ser poético, acolhedor e transmitir exclusividade. Use referências sensoriais às cores da paleta.
-      Use uma estrutura elegante de parágrafos. Não use placeholders, use exatamente os dados fornecidos.`;
+      O texto deve ser poético, acolhedor e transmitir exclusividade. Use referências às cores selecionadas.`;
 
       const parts: any[] = [{ text: textPrompt }];
 
@@ -111,7 +149,7 @@ const InviteCreatorView: React.FC = () => {
             data: audioBase64,
           },
         });
-        parts[0].text += "\n\nIMPORTANTE: Ouça o áudio anexo. Ele contém instruções de voz do decorador sobre o tom e detalhes específicos que devem ser incluídos no texto.";
+        parts[0].text += "\n\nO áudio anexo contém o tom de voz e desejos específicos do cliente.";
       }
 
       const response = await ai.models.generateContent({
@@ -122,22 +160,33 @@ const InviteCreatorView: React.FC = () => {
       setInviteText(response.text || '');
     } catch (error: any) {
       console.error("Erro ao gerar convite:", error);
-      alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}. Verifique se sua chave de API é válida.`);
+      alert(`Falha no Oráculo AI: ${error?.message || "Erro desconhecido"}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(inviteText);
-    alert("Convite copiado para o Atelier!");
-  };
-
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
-      <header>
-        <h2 className="text-4xl font-display text-emerald-950">Estúdio de Convites AI</h2>
-        <p className="text-slate-500 mt-2">Harmonize dados, cores e voz para criar a poesia da sua festa.</p>
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-4xl font-display text-emerald-950">Estúdio de Convites AI</h2>
+          <p className="text-slate-500 mt-2">Harmonize dados, cores e voz para criar a poesia da sua festa.</p>
+        </div>
+        <div className="flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
+           <button 
+             onClick={() => setPreviewTab('text')}
+             className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewTab === 'text' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}
+           >
+             Caligrafia
+           </button>
+           <button 
+             onClick={() => setPreviewTab('visual')}
+             className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewTab === 'visual' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}
+           >
+             Visual
+           </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
@@ -148,17 +197,17 @@ const InviteCreatorView: React.FC = () => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Título do Evento</label>
                 <input 
                   type="text" 
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-champagne outline-none transition-all text-sm font-medium"
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white outline-none transition-all text-sm font-medium"
                   placeholder="Ex: Bodas de Ouro"
                   value={formData.eventTitle}
                   onChange={e => setFormData({...formData, eventTitle: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Anfitrião/Cliente</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Anfitrião</label>
                 <input 
                   type="text" 
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-champagne outline-none transition-all text-sm font-medium"
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white outline-none transition-all text-sm font-medium"
                   placeholder="Nome do cliente"
                   value={formData.clientName}
                   onChange={e => setFormData({...formData, clientName: e.target.value})}
@@ -168,52 +217,51 @@ const InviteCreatorView: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tema da Celebração</label>
                 <input 
-                  type="date" 
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-champagne outline-none transition-all text-sm font-medium"
-                  value={formData.date}
-                  onChange={e => setFormData({...formData, date: e.target.value})}
+                  type="text" 
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white outline-none transition-all text-sm font-medium"
+                  placeholder="Ex: Jardim Encantado de Inverno"
+                  value={formData.theme}
+                  onChange={e => setFormData({...formData, theme: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Horário</label>
-                <input 
-                  type="time" 
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-champagne outline-none transition-all text-sm font-medium"
-                  value={formData.time}
-                  onChange={e => setFormData({...formData, time: e.target.value})}
-                />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data & Hora</label>
+                <div className="flex gap-2">
+                  <input type="date" className="flex-1 p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                  <input type="time" className="w-24 p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Paleta de Cores</label>
-              <div className="flex flex-wrap gap-4 p-4 bg-slate-50 rounded-[32px] border border-slate-100">
+              <div className="flex flex-wrap gap-3 p-4 bg-slate-50 rounded-[32px] border border-slate-100">
                 {palettes.map(p => (
                   <button
                     key={p.name}
                     onClick={() => setFormData({...formData, palette: p.name})}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl transition-all ${formData.palette === p.name ? 'bg-white shadow-md scale-105' : 'opacity-40 hover:opacity-100'}`}
+                    className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${formData.palette === p.name ? 'bg-white shadow-sm ring-1 ring-emerald-100' : 'opacity-40 hover:opacity-100'}`}
                   >
-                    <div className="flex -space-x-2">
+                    <div className="flex -space-x-1.5">
                       {p.colors.map((c, i) => (
-                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: c }}></div>
+                        <div key={i} className="w-6 h-6 rounded-full border border-white" style={{ backgroundColor: c }}></div>
                       ))}
                     </div>
-                    <span className="text-[8px] font-bold uppercase tracking-tighter text-slate-600">{p.name}</span>
+                    <span className="text-[7px] font-black uppercase tracking-tighter text-slate-500">{p.name}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Inspirações & Voz</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instruções por Voz ou Texto</label>
               <div className="relative">
                 <textarea 
-                  rows={3}
-                  className="w-full p-5 pr-14 rounded-[32px] bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-champagne outline-none transition-all text-sm font-medium resize-none"
-                  placeholder="Descreva detalhes ou peça algo específico..."
+                  rows={2}
+                  className="w-full p-5 pr-14 rounded-[28px] bg-slate-50 border border-slate-100 focus:bg-white outline-none transition-all text-sm font-medium resize-none"
+                  placeholder="Desejos específicos..."
                   value={formData.additionalInfo}
                   onChange={e => setFormData({...formData, additionalInfo: e.target.value})}
                 />
@@ -222,84 +270,84 @@ const InviteCreatorView: React.FC = () => {
                   onMouseUp={stopRecording}
                   onMouseLeave={stopRecording}
                   className={`absolute right-4 bottom-4 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    isRecording ? 'bg-red-500 text-white animate-pulse' : audioBase64 ? 'bg-emerald-500 text-white' : 'bg-emerald-100 text-emerald-600'
+                    isRecording ? 'bg-red-500 text-white animate-pulse' : audioBase64 ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'
                   }`}
-                  title="Segure para gravar inspiração por voz"
                 >
                   {isRecording ? '⏺️' : audioBase64 ? '✅' : '🎙️'}
                 </button>
               </div>
-              {audioBase64 && (
-                <p className="text-[9px] text-emerald-600 font-bold uppercase tracking-widest text-right mr-2">Áudio pronto para a IA ✨</p>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estilo do Texto</label>
-              <div className="flex flex-wrap gap-2">
-                {vibes.map(v => (
-                  <button 
-                    key={v}
-                    onClick={() => setFormData({...formData, vibe: v})}
-                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${formData.vibe === v ? 'bg-emerald-950 text-champagne' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
 
-          <button 
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full py-6 bg-emerald-950 text-white rounded-[24px] font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl hover:bg-emerald-900 transition-all flex items-center justify-center gap-3 active:scale-95"
-          >
-            {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                Consagrando Obra-Prima...
-              </>
-            ) : '✨ Criar Convite de Luxo'}
-          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button 
+              onClick={handleGenerateText}
+              disabled={loading}
+              className="py-5 bg-emerald-950 text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-900 transition-all flex items-center justify-center gap-2"
+            >
+              {loading ? <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : '✨ Redigir Texto'}
+            </button>
+            <button 
+              onClick={generateVisualPreview}
+              disabled={loadingImage}
+              className="py-5 bg-champagne text-emerald-950 rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-white transition-all flex items-center justify-center gap-2"
+            >
+              {loadingImage ? <span className="w-3 h-3 border-2 border-emerald-950/20 border-t-emerald-950 rounded-full animate-spin"></span> : '🎨 Preview Visual'}
+            </button>
+          </div>
         </div>
 
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-champagne/20 to-emerald-500/20 rounded-[60px] blur opacity-25"></div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-champagne/10 to-emerald-500/10 rounded-[60px] blur opacity-25"></div>
           <div className="relative bg-white min-h-[500px] h-full rounded-[60px] border border-slate-100 shadow-xl overflow-hidden flex flex-col">
-            <div className="bg-slate-50/50 p-6 border-b border-slate-100 flex justify-between items-center">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Preview da Caligrafia AI</span>
-              {inviteText && (
-                <button 
-                  onClick={copyToClipboard}
-                  className="text-[9px] font-black text-emerald-700 uppercase tracking-widest hover:text-emerald-950"
-                >
-                  Copiar Texto
-                </button>
-              )}
-            </div>
             
-            <div className="p-12 md:p-16 flex-1 flex flex-col items-center justify-center text-center">
-              {loading ? (
-                <div className="space-y-6 flex flex-col items-center">
-                   <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center animate-pulse">
-                     <span className="text-3xl">🖋️</span>
-                   </div>
-                   <p className="font-display italic text-slate-400 animate-pulse">A IA está unindo suas cores e sua voz...</p>
-                </div>
-              ) : inviteText ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                   <div className="w-12 h-px bg-champagne mx-auto mb-10"></div>
-                   <div className="font-display text-xl md:text-2xl text-emerald-950 leading-relaxed whitespace-pre-wrap italic">
-                     {inviteText}
-                   </div>
-                   <div className="w-12 h-px bg-champagne mx-auto mt-10"></div>
-                </div>
+            <div className="flex-1 p-12 flex flex-col items-center justify-center text-center">
+              {previewTab === 'text' ? (
+                loading ? (
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-full mx-auto animate-bounce flex items-center justify-center text-xl">🖋️</div>
+                    <p className="font-display italic text-slate-400">Consultando o Oráculo da Caligrafia...</p>
+                  </div>
+                ) : inviteText ? (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                     <div className="font-display text-xl md:text-2xl text-emerald-950 leading-relaxed whitespace-pre-wrap italic">
+                       {inviteText}
+                     </div>
+                     <button 
+                       onClick={() => navigator.clipboard.writeText(inviteText)}
+                       className="mt-10 text-[9px] font-black text-emerald-700 uppercase tracking-widest hover:text-emerald-950"
+                     >
+                       Copiar Caligrafia
+                     </button>
+                  </div>
+                ) : (
+                  <div className="opacity-20 flex flex-col items-center">
+                    <span className="text-6xl mb-4">📜</span>
+                    <p className="font-display italic">Aguardando sua inspiração.</p>
+                  </div>
+                )
               ) : (
-                <div className="text-center space-y-4 opacity-20 grayscale">
-                  <span className="text-7xl">📜</span>
-                  <p className="font-display text-lg italic text-slate-400">Escolha sua paleta e grave sua inspiração.</p>
-                </div>
+                loadingImage ? (
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 bg-champagne/20 rounded-full mx-auto animate-pulse flex items-center justify-center text-xl">🎨</div>
+                    <p className="font-display italic text-slate-400">Pintando sua visão artística...</p>
+                  </div>
+                ) : visualPreview ? (
+                  <div className="w-full h-full p-4 animate-in zoom-in duration-700">
+                    <div className="relative w-full h-full rounded-[40px] overflow-hidden shadow-inner border-8 border-white">
+                      <img src={visualPreview} className="w-full h-full object-cover" alt="Visual Theme" />
+                      <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/80 backdrop-blur-md rounded-2xl text-left border border-white/50">
+                        <p className="text-[10px] font-black text-emerald-900 uppercase tracking-widest">Inspiration Board</p>
+                        <p className="text-[9px] text-slate-500 font-medium">Conceito artístico gerado pelo Atelier AI para o tema: {formData.theme}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="opacity-20 flex flex-col items-center">
+                    <span className="text-6xl mb-4">🖼️</span>
+                    <p className="font-display italic">Gere um Preview Visual do tema.</p>
+                  </div>
+                )
               )}
             </div>
           </div>
