@@ -20,7 +20,7 @@ const AIChatHelper: React.FC = () => {
       // Uso direto da chave injetada
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       chatRef.current = ai.chats.create({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3-flash-preview',
         config: {
           systemInstruction: 'Você é um planejador de eventos de elite, sofisticado, criativo e prestativo. Ajude com tendências, logística, etiqueta e design.',
         },

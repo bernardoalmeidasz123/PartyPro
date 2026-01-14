@@ -11,7 +11,7 @@ const InviteCreatorView: React.FC = () => {
   const [selectedPalette, setSelectedPalette] = useState('Esmeralda & Ouro');
   const [customPalette, setCustomPalette] = useState('');
   
-  // Configurações Nano Banana Pro
+  // Configurações UI (Note: O modelo Flash não suporta imageSize nativamente, mas mantemos a UI por estética)
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [isEditing, setIsEditing] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
@@ -64,20 +64,20 @@ const InviteCreatorView: React.FC = () => {
         });
         setGeneratedContent(response.text || 'O Atelier não conseguiu redigir o texto no momento. Tente novamente.');
       } else {
-        // Geração Visual com Nano Banana Pro (gemini-3-pro-image-preview)
+        // Geração Visual com Nano Banana (Flash) - Modelo mais rápido e eficiente
         const prompt = `Hyper-realistic professional event design for "${formData.theme}". 
         The scene should reflect a high-end luxury party at ${formData.location || 'a magnificent venue'}.
         Visual details: ${formData.elements}.
         Color theme: ${paletteStr}.
-        Cinematic lighting, 8k resolution, elegant atmosphere, highly detailed, photorealistic.`;
+        Cinematic lighting, elegant atmosphere, highly detailed, photorealistic.`;
         
         const response = await ai.models.generateContent({
-          model: 'gemini-3-pro-image-preview',
+          model: 'gemini-2.5-flash-image', // Modelo Flash (Nano Banana)
           contents: { parts: [{ text: prompt }] },
           config: { 
             imageConfig: { 
-              aspectRatio: "16:9",
-              imageSize: imageSize // Suporte a 1K, 2K e 4K
+              aspectRatio: "16:9"
+              // imageSize removido pois é exclusivo do modelo Pro
             } 
           }
         });
@@ -156,10 +156,10 @@ const InviteCreatorView: React.FC = () => {
     <div className="space-y-10 animate-in fade-in duration-1000 pb-20">
       <header>
         <div className="flex items-center gap-3 mb-2">
-           <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-widest">Estúdio de Criação Pro</span>
+           <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-widest">Estúdio de Criação</span>
         </div>
         <h2 className="text-4xl font-display text-emerald-950 font-bold">Atelier Digital</h2>
-        <p className="text-slate-500 italic">Preencha os dados e peça para a IA projetar seu evento em Alta Resolução.</p>
+        <p className="text-slate-500 italic">Preencha os dados e peça para a IA projetar seu evento.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -206,7 +206,7 @@ const InviteCreatorView: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Resolução (Nano Banana Pro)</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Formato (Padrão Flash)</label>
             <div className="flex gap-4">
               {['1K', '2K', '4K'].map((size) => (
                 <button
