@@ -1,305 +1,306 @@
-import React, { useState, useRef } from 'react';
-import { GoogleGenAI } from "@google/genai";
 
-declare var process: { env: { [key: string]: string } };
-declare var window: any;
+import React, { useState } from 'react';
+import { GoogleGenAI } from "@google/genai";
 
 const InviteCreatorView: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [loadingImage, setLoadingImage] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
   const [visualPreview, setVisualPreview] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const [previewTab, setPreviewTab] = useState<'text' | 'visual'>('text');
-  const [isCustomPalette, setIsCustomPalette] = useState(false);
-  const [creationType, setCreationType] = useState<'invite' | 'cake_table'>('invite');
+  const [paletteMode, setPaletteMode] = useState<'prebuilt' | 'custom'>('prebuilt');
+  const [selectedPalette, setSelectedPalette] = useState('Esmeralda & Ouro');
+  const [customPalette, setCustomPalette] = useState('');
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  // New States for Advanced Image Generation
+  const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editPrompt, setEditPrompt] = useState('');
 
   const [formData, setFormData] = useState({
     clientName: '',
+    theme: '',
     date: '',
     time: '',
     location: '',
-    palette: 'Esmeralda & Ouro',
-    customPaletteText: '',
-    additionalInfo: '',
-    theme: ''
+    elements: '',
+    tone: 'Sofisticado'
   });
 
-  const palettes = [
-    { name: 'Esmeralda & Ouro', colors: ['#022c22', '#d4af37'] },
-    { name: 'Rose & Champagne', colors: ['#f4d7d7', '#f7e7ce'] },
-    { name: 'Noite Estrelada', colors: ['#0c0c1d', '#c0c0c0'] },
-    { name: 'Minimalista Branco', colors: ['#ffffff', '#e2e8f0'] },
-    { name: 'Bordeaux & Prata', colors: ['#4c0519', '#e5e7eb'] }
-  ];
-
-  const getAIInstance = () => {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error("Chave de API não configurada. Por favor, selecione sua chave.");
-    }
-    return new GoogleGenAI({ apiKey });
+  const getAI = () => {
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-      mediaRecorder.onstop = () => {
-        stream.getTracks().forEach(track => track.stop());
-      };
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      alert("Acesso ao microfone negado.");
+  const handleGenerate = async (type: 'text' | 'visual') => {
+    if (!formData.clientName || !formData.theme) {
+      alert("Para o Atelier trabalhar, preencha pelo menos o Nome e o Tema!");
+      return;
     }
-  };
+    
+    const ai = getAI();
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const getActivePalette = () => isCustomPalette ? (formData.customPaletteText || 'Personalizada') : formData.palette;
-
-  const generateVisualPreview = async () => {
-    if (!formData.clientName || !formData.date || !formData.location) {
-      return alert("Preencha os dados básicos primeiro.");
-    }
-    setLoadingImage(true);
-    setPreviewTab('visual');
-    try {
-      const ai = getAIInstance();
-      const palette = getActivePalette();
-      const prompt = `Luxurious party invitation design for ${formData.clientName} at ${formData.location} on ${formData.date}. Color palette: ${palette}. High-end elegant style, 4K resolution, minimalist luxury aesthetic, professional event branding.`;
-      
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image', 
-        contents: { parts: [{ text: prompt }] },
-        config: { imageConfig: { aspectRatio: "16:9" } }
-      });
-      
-      const candidate = response.candidates?.[0];
-      const parts = candidate?.content?.parts || [];
-      const imagePart = parts.find(p => p.inlineData);
-      
-      if (imagePart?.inlineData?.data) {
-        setVisualPreview(`data:image/png;base64,${imagePart.inlineData.data}`);
-      } else {
-        alert("O estúdio de criação não conseguiu gerar a prévia agora. Tente novamente.");
-      }
-    } catch (error: any) {
-      console.error(error);
-      if (error?.message?.includes("entity was not found") && window.aistudio) {
-        await window.aistudio.openSelectKey();
-      } else {
-        alert("Houve um erro ao gerar a imagem no atelier.");
-      }
-    } finally {
-      setLoadingImage(false);
-    }
-  };
-
-  const handleGenerateText = async () => {
-    if (!formData.clientName || !formData.date || !formData.location) {
-      return alert("Preencha Nome, Data e Local.");
-    }
     setLoading(true);
-    setPreviewTab('text');
+    setPreviewTab(type);
+    
     try {
-      const ai = getAIInstance();
-      const palette = getActivePalette();
-      const textPrompt = creationType === 'cake_table' 
-        ? `Descreva um conceito poético e luxuoso de mesa de bolo para um evento de elite. Anfitrião: ${formData.clientName}, Local: ${formData.location}, Paleta: ${palette}. Foco em sofisticação e design contemporâneo.`
-        : `Redija um convite formal e extremamente sofisticado para um evento de gala. Anfitrião: ${formData.clientName}, Data: ${formData.date}, Horário: ${formData.time}, Local: ${formData.location}, Paleta de Cores: ${palette}. O tom deve ser de um atelier de alta costura.`;
+      const paletteStr = paletteMode === 'prebuilt' ? selectedPalette : customPalette;
       
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview', 
-        contents: [{ parts: [{ text: textPrompt }] }]
-      });
-      
-      setGeneratedContent(response.text || 'O atelier não conseguiu redigir no momento.');
-    } catch (error: any) {
-      console.error(error);
-      if (error?.message?.includes("entity was not found") && window.aistudio) {
-        await window.aistudio.openSelectKey();
+      if (type === 'text') {
+        const prompt = `Atue como um designer e redator de convites de altíssimo luxo. 
+        Crie o texto de um convite exclusivo e poético:
+        - Anfitrião: ${formData.clientName}
+        - Tema: ${formData.theme}
+        - Localização Exata: ${formData.location || 'Espaço Secreto'}
+        - Horário: ${formData.time || 'A definir'}
+        - Data: ${formData.date || 'Em breve'}
+        - Elementos Especiais: ${formData.elements || 'Festa tradicional de gala'}
+        - Paleta: ${paletteStr}
+        - Tom: ${formData.tone}
+        
+        Instrução: Integre o Local, a Hora e os Elementos Especiais organicamente no texto. O convite deve ser magnético e luxuoso.`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: prompt
+        });
+        setGeneratedContent(response.text || 'O Atelier não conseguiu redigir o texto no momento. Tente novamente.');
       } else {
-        alert("Houve um erro ao processar o texto no atelier.");
+        // Visual Generation using Gemini 3 Pro Image Preview (Nano Banana Pro)
+        const prompt = `Hyper-realistic professional event design for "${formData.theme}". 
+        The scene should reflect a high-end luxury party at ${formData.location || 'a magnificent venue'}.
+        Visual details: ${formData.elements}.
+        Color theme: ${paletteStr}.
+        Cinematic lighting, 8k resolution, elegant atmosphere, highly detailed.`;
+        
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-pro-image-preview',
+          contents: { parts: [{ text: prompt }] },
+          config: { 
+            imageConfig: { 
+              aspectRatio: "16:9",
+              imageSize: imageSize // 1K, 2K, or 4K
+            } 
+          }
+        });
+
+        let imageFound = false;
+        if (response.candidates && response.candidates[0].content.parts) {
+          for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+              setVisualPreview(`data:image/png;base64,${part.inlineData.data}`);
+              imageFound = true;
+              break;
+            }
+          }
+        }
+        if (!imageFound) alert("O Atelier não conseguiu gerar a imagem. Tente novamente.");
+        setIsEditing(false); // Reset edit mode on new generation
       }
+    } catch (e: any) {
+      console.error("Erro na IA:", e);
+      alert(`Erro no Atelier Digital: ${e.message || 'Verifique sua conexão.'}`);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEditImage = async () => {
+    if (!visualPreview || !editPrompt) return;
+    
+    const ai = getAI();
+
+    setLoading(true);
+
+    try {
+      const base64Data = visualPreview.split(',')[1];
+
+      // Editing using Gemini 2.5 Flash Image (Nano Banana Powered)
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: 'image/png',
+              },
+            },
+            {
+              text: editPrompt,
+            },
+          ],
+        },
+      });
+
+      let imageFound = false;
+      if (response.candidates && response.candidates[0].content.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            setVisualPreview(`data:image/png;base64,${part.inlineData.data}`);
+            imageFound = true;
+            break;
+          }
+        }
+      }
+      if (!imageFound) alert("Não foi possível editar a imagem.");
+      
+    } catch (e: any) {
+      console.error(e);
+      alert("Erro ao editar imagem.");
+    } finally {
+      setLoading(false);
+      setEditPrompt('');
+      setIsEditing(false);
+    }
+  };
+
   return (
-    <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-20">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="text-center md:text-left">
-          <h2 className="text-3xl md:text-4xl font-display text-emerald-950">Atelier de Design AI</h2>
-          <p className="text-slate-500 mt-2 text-sm italic">Criações exclusivas com inteligência artificial para festas de elite.</p>
+    <div className="space-y-10 animate-in fade-in duration-1000 pb-20">
+      <header>
+        <div className="flex items-center gap-3 mb-2">
+           <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-widest">Estúdio de Criação Pro</span>
         </div>
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full md:w-auto">
-          <button onClick={() => setCreationType('invite')} className={`flex-1 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'invite' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}>Convite</button>
-          <button onClick={() => setCreationType('cake_table')} className={`flex-1 md:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${creationType === 'cake_table' ? 'bg-emerald-950 text-white shadow-lg' : 'text-slate-400'}`}>Mesa de Bolo</button>
-        </div>
+        <h2 className="text-4xl font-display text-emerald-950 font-bold">Atelier Digital</h2>
+        <p className="text-slate-500 italic">Preencha os dados e peça para a IA projetar seu evento em Alta Resolução.</p>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12">
-        <div className="bg-white p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 shadow-sm space-y-6 md:space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-sm space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Anfitrião</label>
-              <input type="text" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} placeholder="Ex: Família Real" />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Anfitrião</label>
+              <input className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-emerald-100 transition-all font-medium" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} placeholder="Ex: Família Cavalcanti" />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Data</label>
-              <input type="date" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tema</label>
+              <input className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-emerald-100 transition-all font-medium" value={formData.theme} onChange={e => setFormData({...formData, theme: e.target.value})} placeholder="Ex: Noite das Esmeraldas" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data</label>
+              <input type="date" className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-xs" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Local</label>
-              <input type="text" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 outline-none text-sm" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Mansão Elite" />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Horário</label>
+              <input type="time" className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-xs" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Horário</label>
-              <input type="time" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs outline-none" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estilo</label>
+              <select className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-xs font-bold" value={formData.tone} onChange={e => setFormData({...formData, tone: e.target.value})}>
+                <option>Sofisticado</option>
+                <option>Poético</option>
+                <option>Minimalista</option>
+                <option>Festivo</option>
+              </select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Cores da Identidade</label>
-            <div className="flex flex-wrap gap-2 md:gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-              {palettes.map(p => (
-                <button 
-                  key={p.name} 
-                  onClick={() => {setIsCustomPalette(false); setFormData({...formData, palette: p.name});}} 
-                  className={`flex items-center p-2 rounded-xl transition-all ${(!isCustomPalette && formData.palette === p.name) ? 'bg-white shadow-sm ring-1 ring-emerald-200' : 'opacity-40'}`}
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Local</label>
+            <input className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-emerald-100 transition-all font-medium" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Ex: Palácio de Versalhes" />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Elementos Extras</label>
+            <textarea rows={3} className="w-full p-5 bg-slate-50 rounded-[32px] border-none outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-sm font-medium resize-none" value={formData.elements} onChange={e => setFormData({...formData, elements: e.target.value})} placeholder="Ex: Arranjos altos de orquídeas, buffet de lagosta..." />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Resolução (Nano Banana Pro)</label>
+            <div className="flex gap-4">
+              {['1K', '2K', '4K'].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setImageSize(size as any)}
+                  className={`flex-1 py-3 rounded-xl text-xs font-black transition-all border ${
+                    imageSize === size 
+                      ? 'bg-emerald-950 text-champagne border-emerald-950' 
+                      : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-emerald-200'
+                  }`}
                 >
-                  <div className="flex -space-x-1">
-                    {p.colors.map((c, i) => (
-                      <div key={i} className="w-6 h-6 rounded-full border border-white" style={{ backgroundColor: c }}></div>
-                    ))}
-                  </div>
+                  {size}
                 </button>
               ))}
-              <button 
-                onClick={() => setIsCustomPalette(true)} 
-                className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${isCustomPalette ? 'bg-white shadow-sm ring-1 ring-emerald-200' : 'bg-slate-200/50 opacity-40'}`}
-              >
-                🎨
-              </button>
-            </div>
-            {isCustomPalette && (
-              <input 
-                type="text" 
-                className="w-full p-3 mt-2 rounded-xl bg-slate-50 border border-slate-100 outline-none text-[10px] font-bold uppercase" 
-                placeholder="Ex: Tiffany & Prata" 
-                value={formData.customPaletteText}
-                onChange={e => setFormData({...formData, customPaletteText: e.target.value})}
-              />
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[9px] font-black text-emerald-900 uppercase tracking-widest ml-1">Detalhes Adicionais</label>
-            <div className="relative">
-              <textarea 
-                rows={3} 
-                className="w-full p-4 pr-14 rounded-2xl bg-slate-50 border border-slate-100 outline-none text-sm resize-none" 
-                value={formData.additionalInfo} 
-                onChange={e => setFormData({...formData, additionalInfo: e.target.value})} 
-                placeholder="Ex: Toque clássico, flores brancas..." 
-              />
-              <button 
-                onMouseDown={startRecording} 
-                onMouseUp={stopRecording} 
-                onMouseLeave={stopRecording} 
-                className={`absolute right-3 bottom-3 w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}
-              >
-                🎙️
-              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button 
-              onClick={handleGenerateText} 
-              disabled={loading} 
-              className="py-4 md:py-5 bg-emerald-950 text-white rounded-xl md:rounded-[24px] font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 disabled:opacity-50"
-            >
-              {loading ? 'Redigindo...' : '✨ Criar Texto'}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <button onClick={() => handleGenerate('text')} disabled={loading} className="py-6 bg-slate-100 text-emerald-950 rounded-[28px] font-black text-[10px] uppercase tracking-[0.2em] shadow-sm hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50">
+              {loading && previewTab === 'text' ? 'Redigindo...' : '✍️ Redigir Convite'}
             </button>
-            <button 
-              onClick={generateVisualPreview} 
-              disabled={loadingImage} 
-              className="py-4 md:py-5 bg-champagne text-emerald-950 rounded-xl md:rounded-[24px] font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 disabled:opacity-50"
-            >
-              {loadingImage ? 'Visualizando...' : '🎨 Criar Visual'}
+            <button onClick={() => handleGenerate('visual')} disabled={loading} className="py-6 bg-emerald-950 text-white rounded-[28px] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-900 transition-all active:scale-95 disabled:opacity-50">
+              {loading && previewTab === 'visual' ? 'Desenhando...' : '🖼️ Gerar Imagem'}
             </button>
           </div>
         </div>
 
-        <div className="relative bg-white min-h-[400px] rounded-[40px] md:rounded-[60px] border border-slate-100 shadow-xl overflow-hidden flex flex-col items-center justify-center text-center p-8 md:p-12">
-          <div className="absolute top-8 flex gap-2 bg-slate-50 p-1 rounded-full border border-slate-100 z-10">
-            <button onClick={() => setPreviewTab('text')} className={`px-5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'text' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Conceito Texto</button>
-            <button onClick={() => setPreviewTab('visual')} className={`px-5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${previewTab === 'visual' ? 'bg-white shadow-sm text-emerald-950' : 'text-slate-400'}`}>Conceito Visual</button>
-          </div>
-
-          {previewTab === 'text' ? (
-            loading ? (
-              <div className="animate-pulse space-y-4">
-                <div className="w-12 h-12 bg-emerald-50 rounded-full mx-auto"></div>
-                <p className="font-display italic text-slate-400">O redator está no atelier...</p>
-              </div>
-            ) : generatedContent ? (
-              <div className="animate-in fade-in duration-500 w-full text-left">
-                <h5 className="text-[9px] font-black text-champagne uppercase tracking-widest mb-6">Proposta Atelier</h5>
-                <div className="font-display text-base md:text-lg text-emerald-950 leading-relaxed italic whitespace-pre-wrap max-h-[350px] overflow-y-auto pr-4 scrollbar-hide">{generatedContent}</div>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(generatedContent);
-                    alert("Copiado com sucesso!");
-                  }} 
-                  className="mt-8 text-[8px] font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-100 hover:border-emerald-500 transition-all"
-                >
-                  Copiar Proposta
-                </button>
-              </div>
-            ) : (
-              <div className="opacity-20 flex flex-col items-center">
-                <span className="text-6xl mb-4">📜</span>
-                <p className="font-display italic text-emerald-950">Seu conceito aparecerá aqui.</p>
-              </div>
-            )
-          ) : (
-            loadingImage ? (
-              <div className="animate-pulse space-y-4">
-                <div className="w-12 h-12 bg-champagne/10 rounded-full mx-auto"></div>
-                <p className="font-display italic text-slate-400">Renderizando identidade...</p>
-              </div>
-            ) : visualPreview ? (
-              <div className="w-full h-full p-4 animate-in zoom-in duration-500">
-                <div className="relative w-full h-full rounded-[32px] overflow-hidden shadow-inner border-4 border-white">
-                  <img src={visualPreview} className="w-full h-full object-cover" alt="Visual Concept" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/20 to-transparent pointer-events-none"></div>
+        <div className="bg-slate-900 rounded-[60px] p-12 text-white relative overflow-hidden flex flex-col items-center justify-center shadow-2xl min-h-[500px]">
+           {loading ? (
+             <div className="text-center space-y-6 relative z-10">
+                <div className="w-16 h-16 border-4 border-champagne border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="font-display italic text-xl text-champagne">O Atelier está trabalhando...</p>
+             </div>
+           ) : previewTab === 'text' && generatedContent ? (
+             <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-700 relative z-10">
+               <p className="font-display text-2xl leading-relaxed italic pr-4 whitespace-pre-wrap">{generatedContent}</p>
+             </div>
+           ) : previewTab === 'visual' && visualPreview ? (
+             <div className="w-full h-full flex flex-col relative z-10">
+                <div className="relative group rounded-[40px] overflow-hidden shadow-2xl flex-1">
+                   <img src={visualPreview} className="w-full h-full object-cover animate-in zoom-in duration-700" alt="Preview Visual" />
+                   
+                   {!isEditing && (
+                     <button 
+                       onClick={() => setIsEditing(true)}
+                       className="absolute bottom-6 right-6 bg-white/90 backdrop-blur text-emerald-950 px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 transition-all opacity-0 group-hover:opacity-100"
+                     >
+                       ✏️ Editar Imagem
+                     </button>
+                   )}
                 </div>
-              </div>
-            ) : (
-              <div className="opacity-20 flex flex-col items-center">
-                <span className="text-6xl mb-4">🖼️</span>
-                <p className="font-display italic text-emerald-950">Crie um visual para encantar seu cliente.</p>
-              </div>
-            )
-          )}
+
+                {isEditing && (
+                  <div className="mt-6 bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/20 animate-in slide-in-from-bottom-2">
+                    <p className="text-[10px] font-black text-champagne uppercase tracking-widest mb-2">Editor Nano Banana</p>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={editPrompt}
+                        onChange={(e) => setEditPrompt(e.target.value)}
+                        placeholder="Ex: Adicionar filtro vintage, remover cadeira..."
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-champagne"
+                      />
+                      <button 
+                        onClick={handleEditImage}
+                        disabled={loading || !editPrompt}
+                        className="bg-champagne text-emerald-950 px-6 rounded-xl font-bold text-xs uppercase tracking-wide hover:bg-white transition-colors"
+                      >
+                        Aplicar
+                      </button>
+                      <button 
+                        onClick={() => setIsEditing(false)}
+                        className="text-white/50 px-3 hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
+             </div>
+           ) : (
+             <div className="text-center opacity-20 relative z-10">
+               <span className="text-6xl">✨</span>
+               <p className="mt-4 font-display italic text-lg">Seu design aparecerá aqui.</p>
+             </div>
+           )}
+           
+           {/* Background Grid Decoration */}
+           <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-5 pointer-events-none">
+              {Array.from({length: 36}).map((_, i) => (
+                <div key={i} className="border border-white/20"></div>
+              ))}
+           </div>
         </div>
       </div>
     </div>

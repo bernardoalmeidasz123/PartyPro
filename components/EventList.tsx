@@ -3,9 +3,6 @@ import React, { useState } from 'react';
 import { EventParty, BudgetItem } from '../types';
 import { GoogleGenAI } from "@google/genai";
 
-declare var process: { env: { [key: string]: string } };
-declare var window: any;
-
 interface EventListProps {
   events: EventParty[];
   setEvents: React.Dispatch<React.SetStateAction<EventParty[]>>;
@@ -27,38 +24,35 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
 
-  const checkAndGetAI = async () => {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (!hasKey) await window.aistudio.openSelectKey();
-      }
-      throw new Error("Chave de API necessária.");
-    }
-    return new GoogleGenAI({ apiKey });
+  const getAI = () => {
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   };
 
   const generateInviteWithAI = async () => {
     if (!selectedEvent) return;
+    const ai = getAI();
+
     setIsGeneratingInvite(true);
     try {
-      const ai = await checkAndGetAI();
-      const prompt = `Crie um convite de luxo para "${selectedEvent.title}" de ${selectedEvent.clientName}. Tema: ${selectedEvent.theme}. Data: ${selectedEvent.date}. Horário: ${selectedEvent.time}. Local: ${selectedEvent.location}.`;
+      const prompt = `Atue como um redator de convites de gala. 
+      Crie um texto de convite luxuoso para a festa "${selectedEvent.title}" do anfitrião ${selectedEvent.clientName}. 
+      Detalhes técnicos: 
+      Tema: ${selectedEvent.theme}
+      Data: ${selectedEvent.date}
+      Horário: ${selectedEvent.time}
+      Local: ${selectedEvent.location}
+      Instrução: Use um tom extremamente sofisticado e acolhedor.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
       });
 
       const text = response.text || '';
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, aiInviteText: text } : ev));
     } catch (error: any) {
-      if (error?.message?.includes("entity was not found") && window.aistudio) {
-        await window.aistudio.openSelectKey();
-      } else {
-        alert("Erro na IA: " + error.message);
-      }
+      console.error(error);
+      alert("Falha no Atelier Digital: Verifique a conexão.");
     } finally {
       setIsGeneratingInvite(false);
     }
@@ -66,13 +60,16 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
   const locateEventWithMaps = async () => {
     if (!selectedEvent || !selectedEvent.location) return;
+    const ai = getAI();
+
     setIsLocating(true);
     try {
-      const ai = await checkAndGetAI();
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite-latest",
-        contents: `Localize "${selectedEvent.location}". Forneça Maps URL.`,
-        config: { tools: [{ googleMaps: {} }] },
+        model: "gemini-2.5-flash-lite-latest", 
+        contents: `Encontre a localização exata e detalhes de: "${selectedEvent.location}". Forneça o link do Google Maps.`,
+        config: { 
+          tools: [{ googleMaps: {} }] 
+        },
       });
 
       const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
@@ -83,6 +80,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
         locationMapUrl: mapUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.location)}`
       } : ev));
     } catch (error: any) {
+      console.error(error);
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { 
         ...ev, 
         locationMapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.location)}`
@@ -200,7 +198,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
                 <div className="space-y-8">
                   <div className="flex flex-col gap-4">
                     <button onClick={generateInviteWithAI} disabled={isGeneratingInvite} className="bg-emerald-950 text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center justify-center gap-3">
-                      {isGeneratingInvite ? 'Consultando Oráculo...' : '✨ Gerar Redação do Convite'}
+                      {isGeneratingInvite ? 'Consultando IA...' : '✨ Gerar Redação Profissional'}
                     </button>
                     {selectedEvent.aiInviteText && (
                       <div className="p-8 bg-emerald-50 rounded-[32px] border border-emerald-100 italic text-emerald-950 font-display text-lg leading-relaxed whitespace-pre-wrap animate-in fade-in slide-in-from-bottom-2">

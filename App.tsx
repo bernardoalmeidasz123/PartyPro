@@ -12,6 +12,9 @@ import SupplierListView from './components/SupplierListView';
 import GuestConfirmationView from './components/GuestConfirmationView';
 import SupplierLoginView from './components/SupplierLoginView';
 import InviteCreatorView from './components/InviteCreatorView';
+import BudgetPlannerView from './components/BudgetPlannerView';
+import RegisterView from './components/RegisterView';
+import AIChatHelper from './components/AIChatHelper';
 import { EventParty, ViewType, AccessRequest, Supplier } from './types';
 
 const App: React.FC = () => {
@@ -21,33 +24,35 @@ const App: React.FC = () => {
   const [events, setEvents] = useState<EventParty[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [pendingRequests, setPendingRequests] = useState<AccessRequest[]>([]);
-  const [authView, setAuthView] = useState<'login' | 'request' | 'supplier-reg' | 'guest-confirmation' | 'supplier-login'>('login');
+  const [authorizedEmails, setAuthorizedEmails] = useState<string[]>([]);
+  const [authView, setAuthView] = useState<'login' | 'request' | 'activation' | 'guest-rsvp' | 'supplier-login' | 'supplier-reg'>('login');
   
   const MASTER_EMAIL = "bernardoalmeida19801955@gmail.com";
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'supplier-registration') {
-      setAuthView('supplier-reg');
-    }
-    if (urlParams.get('mode') === 'guest') {
-      setAuthView('guest-confirmation');
-    }
-
     const savedSession = localStorage.getItem('planparty_session');
     if (savedSession) {
       setIsLoggedIn(true);
       setUserEmail(savedSession);
     }
-
     const savedEvents = localStorage.getItem('planparty_events');
     if (savedEvents) setEvents(JSON.parse(savedEvents));
-
+    
     const savedRequests = localStorage.getItem('planparty_requests');
     if (savedRequests) setPendingRequests(JSON.parse(savedRequests));
-
+    
     const savedSuppliers = localStorage.getItem('planparty_suppliers');
     if (savedSuppliers) setSuppliers(JSON.parse(savedSuppliers));
+
+    const savedAuthorized = localStorage.getItem('planparty_authorized_emails');
+    if (savedAuthorized) {
+      setAuthorizedEmails(JSON.parse(savedAuthorized));
+    } else {
+      setAuthorizedEmails([MASTER_EMAIL]);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'activation') setAuthView('activation');
   }, []);
 
   useEffect(() => {
@@ -55,14 +60,13 @@ const App: React.FC = () => {
   }, [pendingRequests]);
 
   useEffect(() => {
-    localStorage.setItem('planparty_suppliers', JSON.stringify(suppliers));
-  }, [suppliers]);
+    localStorage.setItem('planparty_authorized_emails', JSON.stringify(authorizedEmails));
+  }, [authorizedEmails]);
 
   useEffect(() => {
+    localStorage.setItem('planparty_suppliers', JSON.stringify(suppliers));
     localStorage.setItem('planparty_events', JSON.stringify(events));
-  }, [events]);
-
-  const isAdmin = userEmail.toLowerCase() === MASTER_EMAIL.toLowerCase();
+  }, [suppliers, events]);
 
   const handleLogin = (email: string) => {
     setIsLoggedIn(true);
@@ -78,126 +82,35 @@ const App: React.FC = () => {
     setAuthView('login');
   };
 
-  const handleApproveRequest = (requestId: string) => {
-    const request = pendingRequests.find(r => r.id === requestId);
-    if (!request) return;
-
-    const authorized = JSON.parse(localStorage.getItem('planparty_authorized_emails') || '[]');
-    if (!authorized.includes(request.email.toLowerCase())) {
-      authorized.push(request.email.toLowerCase());
-      localStorage.setItem('planparty_authorized_emails', JSON.stringify(authorized));
-    }
-
-    const credentials = JSON.parse(localStorage.getItem('planparty_credentials') || '{}');
-    const defaultPass = request.email.split('@')[0] + '123';
-    credentials[request.email.toLowerCase()] = defaultPass;
-    localStorage.setItem('planparty_credentials', JSON.stringify(credentials));
-
-    setPendingRequests(prev => prev.map(r => 
-      r.id === requestId ? { ...r, status: 'Aprovado', generatedPassword: defaultPass } : r
-    ));
-
-    alert(`Acesso liberado para ${request.email}. Senha enviada para a aba de aprovados.`);
-  };
-
-  const handleRejectRequest = (requestId: string) => {
-    if (window.confirm("Tem certeza que deseja rejeitar esta solicitação?")) {
-      setPendingRequests(prev => prev.map(r => 
-        r.id === requestId ? { ...r, status: 'Rejeitado' } : r
-      ));
+  const authorizeNewEmail = (email: string) => {
+    const cleanEmail = email.toLowerCase().trim();
+    if (!authorizedEmails.includes(cleanEmail)) {
+      setAuthorizedEmails(prev => [...prev, cleanEmail]);
     }
   };
 
-  const handleRevokeAccess = (requestId: string) => {
-    const request = pendingRequests.find(r => r.id === requestId);
-    if (!request) return;
-
-    if (window.confirm(`⚠️ AÇÃO CRÍTICA: Deseja BANIR ${request.email}?\n\nO e-mail será removido da lista de autorizados e a senha será deletada permanentemente.`)) {
-      // Remover das listas de autorização no LocalStorage
-      const authorized = JSON.parse(localStorage.getItem('planparty_authorized_emails') || '[]');
-      const newAuthorized = authorized.filter((email: string) => email.toLowerCase() !== request.email.toLowerCase());
-      localStorage.setItem('planparty_authorized_emails', JSON.stringify(newAuthorized));
-
-      const credentials = JSON.parse(localStorage.getItem('planparty_credentials') || '{}');
-      delete credentials[request.email.toLowerCase()];
-      localStorage.setItem('planparty_credentials', JSON.stringify(credentials));
-
-      // Atualizar estado e status da requisição
-      setPendingRequests(prev => prev.map(r => 
-        r.id === requestId ? { ...r, status: 'Rejeitado', generatedPassword: undefined } : r
-      ));
-
-      alert(`Usuário ${request.email} foi banido e seu acesso foi revogado com sucesso.`);
-    }
-  };
-
-  const handleGuestConfirm = (eventId: string, guestName: string) => {
-    setEvents(prev => prev.map(ev => {
-      if (ev.id === eventId) {
-        const guests = ev.confirmedGuests || [];
-        if (!guests.includes(guestName)) {
-           return { ...ev, confirmedGuests: [...guests, guestName] };
-        }
-      }
-      return ev;
-    }));
-  };
-
-  const handleAddSupplier = (supplier: Supplier) => {
-    setSuppliers(prev => [...prev, supplier]);
+  const revokeEmail = (email: string) => {
+    if (email === MASTER_EMAIL) return; 
+    setAuthorizedEmails(prev => prev.filter(e => e !== email));
   };
 
   if (!isLoggedIn) {
-    if (authView === 'supplier-reg') {
-      return (
-        <SupplierRegistrationView 
-          onBack={() => setAuthView('login')}
-          onSuccess={(s) => handleAddSupplier(s)}
-        />
-      );
+    switch (authView) {
+      case 'request': 
+        return <RequestAccessView onBack={() => setAuthView('login')} onSubmit={(req) => setPendingRequests([...pendingRequests, req])} />;
+      case 'activation': 
+        return <RegisterView onBack={() => setAuthView('login')} onSuccess={handleLogin} authorizedEmails={authorizedEmails} />;
+      case 'guest-rsvp':
+        return <GuestConfirmationView events={events} onBack={() => setAuthView('login')} onConfirm={(eid, name) => {
+          setEvents(events.map(ev => ev.id === eid ? { ...ev, confirmedGuests: [...(ev.confirmedGuests || []), name] } : ev));
+        }} />;
+      case 'supplier-login':
+        return <SupplierLoginView suppliers={suppliers} onBack={() => setAuthView('login')} onLogin={(s) => { handleLogin(s.email); setActiveView('suppliers'); }} onGoToRegistration={() => setAuthView('supplier-reg')} />;
+      case 'supplier-reg':
+        return <SupplierRegistrationView onBack={() => setAuthView('supplier-login')} onSuccess={(s) => setSuppliers([...suppliers, s])} />;
+      default: 
+        return <Login onLogin={handleLogin} onGoToRequest={() => setAuthView('request')} onGuestAccess={() => setAuthView('guest-rsvp')} onSupplierLogin={() => setAuthView('supplier-login')} onSupplierAccess={() => setAuthView('supplier-reg')} authorizedEmails={authorizedEmails} />;
     }
-    if (authView === 'supplier-login') {
-      return (
-        <SupplierLoginView 
-          suppliers={suppliers}
-          onBack={() => setAuthView('login')}
-          onLogin={(s) => {
-            alert(`Bem-vindo, ${s.name}! Você está logado no Atelier.`);
-            handleLogin(s.email);
-          }}
-          onGoToRegistration={() => setAuthView('supplier-reg')}
-        />
-      );
-    }
-    if (authView === 'guest-confirmation') {
-      return (
-        <GuestConfirmationView 
-          events={events}
-          onBack={() => setAuthView('login')}
-          onConfirm={handleGuestConfirm}
-        />
-      );
-    }
-    if (authView === 'request') {
-      return (
-        <RequestAccessView 
-          onBack={() => setAuthView('login')} 
-          onSubmit={(req) => {
-            setPendingRequests([...pendingRequests, req]);
-            setAuthView('login');
-          }}
-        />
-      );
-    }
-    return (
-      <Login 
-        onLogin={handleLogin} 
-        onGoToRequest={() => setAuthView('request')} 
-        onSupplierAccess={() => setAuthView('supplier-reg')}
-        onGuestAccess={() => setAuthView('guest-confirmation')}
-        onSupplierLogin={() => setAuthView('supplier-login')}
-      />
-    );
   }
 
   const renderContent = () => {
@@ -206,16 +119,22 @@ const App: React.FC = () => {
       case 'calendar': return <CalendarView events={events} />;
       case 'events': return <EventList events={events} setEvents={setEvents} />;
       case 'invite-creator': return <InviteCreatorView />;
+      case 'ai-helper': return <BudgetPlannerView events={events} setEvents={setEvents} />;
       case 'suppliers': return <SupplierListView suppliers={suppliers} setSuppliers={setSuppliers} />;
+      case 'chat-helper': return <AIChatHelper />;
       case 'approvals': 
-        return <AdminApprovalView requests={pendingRequests} onApprove={handleApproveRequest} onReject={handleRejectRequest} onRevoke={handleRevokeAccess} />;
-      case 'ai-helper':
         return (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] text-center max-w-2xl mx-auto space-y-6 animate-in fade-in duration-700">
-            <div className="text-6xl">📈</div>
-            <h2 className="text-3xl font-display text-emerald-950">Performance Atelier</h2>
-            <p className="text-slate-500">Relatórios consolidados de fornecedores e lucratividade anual.</p>
-          </div>
+          <AdminApprovalView 
+            requests={pendingRequests} 
+            authorizedEmails={authorizedEmails}
+            onApprove={(id) => {
+              const req = pendingRequests.find(r => r.id === id);
+              if (req) authorizeNewEmail(req.email);
+              setPendingRequests(pendingRequests.map(r => r.id === id ? { ...r, status: 'Aprovado' } : r));
+            }}
+            onManualAdd={authorizeNewEmail}
+            onRevoke={revokeEmail}
+          />
         );
       default: return <Dashboard events={events} />;
     }
@@ -227,7 +146,7 @@ const App: React.FC = () => {
       setActiveView={setActiveView} 
       userEmail={userEmail} 
       onLogout={handleLogout}
-      pendingCount={isAdmin ? pendingRequests.filter(r => r.status === 'Pendente').length : 0}
+      pendingCount={userEmail === MASTER_EMAIL ? pendingRequests.filter(r => r.status === 'Pendente').length : 0}
     >
       {renderContent()}
     </Layout>
