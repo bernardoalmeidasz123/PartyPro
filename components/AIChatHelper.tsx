@@ -20,7 +20,8 @@ const AIChatHelper: React.FC = () => {
       // Uso direto da chave injetada
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       chatRef.current = ai.chats.create({
-        model: 'gemini-2.5-flash-preview',
+        // Usando Flash Lite para máxima economia e velocidade (Tier Gratuito amigável)
+        model: 'gemini-flash-lite-latest',
         config: {
           systemInstruction: 'Você é um planejador de eventos de elite, sofisticado, criativo e prestativo. Ajude com tendências, logística, etiqueta e design.',
         },
@@ -46,8 +47,8 @@ const AIChatHelper: React.FC = () => {
       }
     } catch (error: any) {
       console.error(error);
-      const msg = error.message?.includes('API Key') 
-        ? '⚠️ Erro de Sistema: Chave de API não encontrada.' 
+      const msg = error.message?.includes('429') || error.message?.includes('quota')
+        ? '⚠️ O Atelier está com alta demanda (Cota Excedida). Aguarde um momento e tente novamente.' 
         : 'Perdão, tive um contratempo momentâneo. Tente novamente.';
       setMessages(prev => [...prev, { role: 'model', text: msg }]);
     } finally {

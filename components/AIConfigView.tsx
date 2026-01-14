@@ -54,7 +54,7 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
       3. Use a variável INSTRUCAO_SISTEMA para moldar sua resposta se solicitado.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: 'gemini-flash-lite-latest',
         contents: prompt,
       });
 

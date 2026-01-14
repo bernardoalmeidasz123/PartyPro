@@ -11,7 +11,6 @@ const InviteCreatorView: React.FC = () => {
   const [selectedPalette, setSelectedPalette] = useState('Esmeralda & Ouro');
   const [customPalette, setCustomPalette] = useState('');
   
-  // Configurações UI (Note: O modelo Flash não suporta imageSize nativamente, mas mantemos a UI por estética)
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [isEditing, setIsEditing] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
@@ -27,7 +26,6 @@ const InviteCreatorView: React.FC = () => {
   });
 
   const getAI = () => {
-    // A chave é injetada pelo vite.config.ts
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
   };
 
@@ -58,13 +56,14 @@ const InviteCreatorView: React.FC = () => {
         
         Instrução: Integre o Local, a Hora e os Elementos Especiais organicamente no texto. O convite deve ser magnético e luxuoso.`;
 
+        // Usando Flash Lite para texto (Econômico)
         const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
+          model: 'gemini-flash-lite-latest',
           contents: prompt
         });
         setGeneratedContent(response.text || 'O Atelier não conseguiu redigir o texto no momento. Tente novamente.');
       } else {
-        // Geração Visual com Nano Banana (Flash) - Modelo mais rápido e eficiente
+        // Geração Visual com Nano Banana (Flash) - Modelo mais rápido de imagem
         const prompt = `Hyper-realistic professional event design for "${formData.theme}". 
         The scene should reflect a high-end luxury party at ${formData.location || 'a magnificent venue'}.
         Visual details: ${formData.elements}.
@@ -72,12 +71,11 @@ const InviteCreatorView: React.FC = () => {
         Cinematic lighting, elegant atmosphere, highly detailed, photorealistic.`;
         
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash-image', // Modelo Flash (Nano Banana)
+          model: 'gemini-2.5-flash-image', // Modelo Flash Imagem
           contents: { parts: [{ text: prompt }] },
           config: { 
             imageConfig: { 
               aspectRatio: "16:9"
-              // imageSize removido pois é exclusivo do modelo Pro
             } 
           }
         });
@@ -92,7 +90,7 @@ const InviteCreatorView: React.FC = () => {
             }
           }
         }
-        if (!imageFound) alert("O Atelier não conseguiu gerar a imagem. Tente novamente.");
+        if (!imageFound) alert("O Atelier não conseguiu gerar a imagem. Verifique se sua cota de imagens permite.");
         setIsEditing(false); 
       }
     } catch (e: any) {
@@ -112,7 +110,7 @@ const InviteCreatorView: React.FC = () => {
     try {
       const base64Data = visualPreview.split(',')[1];
 
-      // Edição com Gemini 2.5 Flash Image (Nano Banana)
+      // Edição com Gemini 2.5 Flash Image
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
