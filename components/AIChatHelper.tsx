@@ -17,8 +17,11 @@ const AIChatHelper: React.FC = () => {
 
   const initChat = () => {
     if (!chatRef.current) {
-      // Uso direto da chave do sistema
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = import.meta.env.VITE_API_KEY;
+      if (!apiKey) {
+        throw new Error("API Key (VITE_API_KEY) não configurada.");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       chatRef.current = ai.chats.create({
         model: 'gemini-3-pro-preview',
         config: {
@@ -46,7 +49,10 @@ const AIChatHelper: React.FC = () => {
       }
     } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', text: 'Perdão, tive um contratempo momentâneo. Tente novamente mais tarde.' }]);
+      const msg = error.message?.includes('API Key') 
+        ? '⚠️ Erro de Sistema: Chave de API não encontrada.' 
+        : 'Perdão, tive um contratempo momentâneo. Tente novamente.';
+      setMessages(prev => [...prev, { role: 'model', text: msg }]);
     } finally {
       setIsLoading(false);
     }

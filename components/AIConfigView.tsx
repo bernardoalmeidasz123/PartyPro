@@ -1,13 +1,8 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { GoogleGenAI } from "@google/genai";
 
 const AIConfigView: React.FC = () => {
-  // Estado para a Chave de API do Usuário
-  const [userApiKey, setUserApiKey] = useState('');
-  const [isKeySaved, setIsKeySaved] = useState(false);
-  const [showKeyInput, setShowKeyInput] = useState(true);
-
   // Estado do Editor
   const [code, setCode] = useState(() => {
     const saved = localStorage.getItem('atelier_logic_code');
@@ -35,40 +30,14 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
   const [snippetCopied, setSnippetCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    const savedKey = localStorage.getItem('atelier_api_key');
-    if (savedKey) {
-      setUserApiKey(savedKey);
-      setIsKeySaved(true);
-      setShowKeyInput(false);
-    }
-  }, []);
-
-  const saveApiKey = () => {
-    if (!userApiKey.startsWith('AIza')) {
-      alert("A chave parece inválida. Ela geralmente começa com 'AIza'.");
-      return;
-    }
-    localStorage.setItem('atelier_api_key', userApiKey);
-    setIsKeySaved(true);
-    setShowKeyInput(false);
-    addLog("Chave de API configurada com sucesso. Sistema Online.");
-  };
-
-  const clearApiKey = () => {
-    localStorage.removeItem('atelier_api_key');
-    setUserApiKey('');
-    setIsKeySaved(false);
-    setShowKeyInput(true);
-  };
-
   const addLog = (msg: string) => {
     setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
 
   const handleRun = async () => {
-    if (!userApiKey) {
-      alert("Configure sua API Key primeiro.");
+    const apiKey = import.meta.env.VITE_API_KEY;
+    if (!apiKey) {
+      alert("⚠️ SISTEMA: VITE_API_KEY não encontrada no servidor.");
       return;
     }
 
@@ -77,8 +46,7 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
     addLog("Iniciando execução do motor customizado...");
 
     try {
-      // Usa a chave fornecida pelo usuário
-      const ai = new GoogleGenAI({ apiKey: userApiKey });
+      const ai = new GoogleGenAI({ apiKey });
       
       const prompt = `Considere este código Python de configuração:
       ${code}
@@ -98,9 +66,6 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
       addLog("Execução finalizada.");
     } catch (error: any) {
       addLog(`ERRO CRÍTICO: ${error.message}`);
-      if (error.message.includes('403') || error.message.includes('key')) {
-         addLog("ALERTA: Sua API Key parece inválida ou expirada.");
-      }
     } finally {
       setIsRunning(false);
     }
@@ -123,14 +88,10 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
     }, 800);
   };
 
-  // Código pronto para exportação
   const readyToUseCode = `import google.generativeai as genai
 
 # CONFIGURAÇÃO MASTER ATELIER
-# Use este script para rodar sua IA fora do navegador
-
-API_KEY = "${userApiKey || 'SUA_CHAVE_AQUI'}"
-
+API_KEY = "SUA_CHAVE_AQUI"
 genai.configure(api_key=API_KEY)
 
 # Instrução vinda do seu Editor no Site
@@ -155,58 +116,6 @@ if __name__ == "__main__":
 
   const lineCount = code.split('\n').length;
 
-  // TELA DE CONFIGURAÇÃO DE CHAVE (BLOQUEIO)
-  if (showKeyInput) {
-    return (
-      <div className="max-w-4xl mx-auto py-20 animate-in zoom-in duration-500">
-        <div className="bg-white rounded-[60px] shadow-2xl overflow-hidden border border-slate-100 flex flex-col md:flex-row">
-          <div className="md:w-1/2 bg-emerald-950 p-12 text-white flex flex-col justify-between">
-            <div>
-              <h2 className="text-3xl font-display text-champagne mb-4">Motor Gemini AI</h2>
-              <p className="text-emerald-300/60 text-sm leading-relaxed">
-                Para ativar a inteligência artificial do Atelier, você precisa conectar sua própria chave de processamento Google.
-              </p>
-            </div>
-            <div className="space-y-4 mt-12">
-               <div className="flex items-center gap-4">
-                 <div className="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center font-bold">1</div>
-                 <span className="text-xs">Acesse <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-champagne underline">Google AI Studio</a></span>
-               </div>
-               <div className="flex items-center gap-4">
-                 <div className="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center font-bold">2</div>
-                 <span className="text-xs">Clique em "Create API Key"</span>
-               </div>
-               <div className="flex items-center gap-4">
-                 <div className="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center font-bold">3</div>
-                 <span className="text-xs">Cole o código ao lado</span>
-               </div>
-            </div>
-          </div>
-          
-          <div className="md:w-1/2 p-12 flex flex-col justify-center space-y-6">
-            <h3 className="text-2xl font-display text-emerald-950">Ativar Sistema</h3>
-            <input 
-              type="password" 
-              placeholder="Cole sua API Key aqui (AIza...)" 
-              className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-950 transition-all font-mono text-sm"
-              value={userApiKey}
-              onChange={e => setUserApiKey(e.target.value)}
-            />
-            <button 
-              onClick={saveApiKey}
-              disabled={!userApiKey}
-              className="w-full py-5 bg-emerald-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-emerald-900 disabled:opacity-50 transition-all"
-            >
-              Conectar e Programar
-            </button>
-            <p className="text-[9px] text-slate-400 text-center">Sua chave é salva apenas no seu navegador.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // TELA DO EDITOR (QUANDO LOGADO)
   return (
     <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-1000 pb-20">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -217,8 +126,7 @@ if __name__ == "__main__":
           <h2 className="text-4xl font-display text-emerald-950 font-bold">Programação & Integração</h2>
           <div className="flex items-center gap-2 mt-2">
              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-             <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Conectado via Gemini</p>
-             <button onClick={clearApiKey} className="ml-4 text-[9px] text-red-400 underline hover:text-red-600">Desconectar Chave</button>
+             <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Conectado ao Sistema Central</p>
           </div>
         </div>
 

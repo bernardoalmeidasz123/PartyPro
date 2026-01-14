@@ -26,8 +26,15 @@ const InviteCreatorView: React.FC = () => {
     tone: 'Sofisticado'
   });
 
-  // Inicialização centralizada com a chave do sistema
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Função segura para pegar a IA apenas quando necessário
+  const getAI = () => {
+    const apiKey = import.meta.env.VITE_API_KEY;
+    if (!apiKey) {
+      alert("⚠️ SISTEMA OFFLINE: A variável VITE_API_KEY não está configurada no servidor.");
+      return null;
+    }
+    return new GoogleGenAI({ apiKey });
+  };
 
   const handleGenerate = async (type: 'text' | 'visual') => {
     if (!formData.clientName || !formData.theme) {
@@ -35,6 +42,9 @@ const InviteCreatorView: React.FC = () => {
       return;
     }
     
+    const ai = getAI();
+    if (!ai) return;
+
     setLoading(true);
     setPreviewTab(type);
     
@@ -102,6 +112,10 @@ const InviteCreatorView: React.FC = () => {
 
   const handleEditImage = async () => {
     if (!visualPreview || !editPrompt) return;
+    
+    const ai = getAI();
+    if (!ai) return;
+
     setLoading(true);
 
     try {
