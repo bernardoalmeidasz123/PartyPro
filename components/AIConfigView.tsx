@@ -35,12 +35,9 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
   };
 
   const handleRun = async () => {
-    const apiKey = import.meta.env.VITE_API_KEY;
-    if (!apiKey) {
-      alert("⚠️ SISTEMA: VITE_API_KEY não encontrada no servidor.");
-      return;
-    }
-
+    // Chave injetada
+    const apiKey = process.env.API_KEY;
+    
     setIsRunning(true);
     setActiveTab('logs');
     addLog("Iniciando execução do motor customizado...");
@@ -91,7 +88,7 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
   const readyToUseCode = `import google.generativeai as genai
 
 # CONFIGURAÇÃO MASTER ATELIER
-API_KEY = "AIzaSyA8sW4o-DNyiZhidkR2ZhATdCxe3RZgBMU"
+API_KEY = "${process.env.API_KEY}"
 genai.configure(api_key=API_KEY)
 
 # Instrução vinda do seu Editor no Site

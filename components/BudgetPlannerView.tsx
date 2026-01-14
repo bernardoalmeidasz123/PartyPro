@@ -17,16 +17,10 @@ const BudgetPlannerView: React.FC<BudgetPlannerViewProps> = ({ events, setEvents
   const analyzeBudget = async () => {
     if (!selectedEvent) return;
     
-    // Uso seguro da chave
-    const apiKey = import.meta.env.VITE_API_KEY;
-    if (!apiKey) {
-      alert("⚠️ SISTEMA: VITE_API_KEY não encontrada.");
-      return;
-    }
-
     setIsAnalyzing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey });
+      // Uso seguro da chave injetada
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Atue como um analista financeiro de eventos (Python Data Expert). 
       Analise este evento: "${selectedEvent.title}", Tema: ${selectedEvent.theme}, Orçamento Atual: R$ ${selectedEvent.totalBudget}.
       Itens: ${JSON.stringify(selectedEvent.budgetItems)}.

@@ -26,14 +26,9 @@ const InviteCreatorView: React.FC = () => {
     tone: 'Sofisticado'
   });
 
-  // Função segura para pegar a IA apenas quando necessário
   const getAI = () => {
-    const apiKey = import.meta.env.VITE_API_KEY;
-    if (!apiKey) {
-      alert("⚠️ SISTEMA OFFLINE: A variável VITE_API_KEY não está configurada no servidor.");
-      return null;
-    }
-    return new GoogleGenAI({ apiKey });
+    // A chave é injetada pelo vite.config.ts
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   };
 
   const handleGenerate = async (type: 'text' | 'visual') => {
@@ -43,8 +38,6 @@ const InviteCreatorView: React.FC = () => {
     }
     
     const ai = getAI();
-    if (!ai) return;
-
     setLoading(true);
     setPreviewTab(type);
     
@@ -114,8 +107,6 @@ const InviteCreatorView: React.FC = () => {
     if (!visualPreview || !editPrompt) return;
     
     const ai = getAI();
-    if (!ai) return;
-
     setLoading(true);
 
     try {

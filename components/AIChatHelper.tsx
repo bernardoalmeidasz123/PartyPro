@@ -17,11 +17,8 @@ const AIChatHelper: React.FC = () => {
 
   const initChat = () => {
     if (!chatRef.current) {
-      const apiKey = import.meta.env.VITE_API_KEY;
-      if (!apiKey) {
-        throw new Error("API Key (VITE_API_KEY) não configurada.");
-      }
-      const ai = new GoogleGenAI({ apiKey });
+      // Uso direto da chave injetada
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       chatRef.current = ai.chats.create({
         model: 'gemini-3-pro-preview',
         config: {

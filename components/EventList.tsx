@@ -26,18 +26,12 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
   // Helper seguro para IA
   const getAI = () => {
-    const apiKey = import.meta.env.VITE_API_KEY;
-    if (!apiKey) {
-      alert("⚠️ ERRO: Chave VITE_API_KEY ausente.");
-      return null;
-    }
-    return new GoogleGenAI({ apiKey });
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   };
 
   const generateInviteWithAI = async () => {
     if (!selectedEvent) return;
     const ai = getAI();
-    if (!ai) return;
 
     setIsGeneratingInvite(true);
     try {
@@ -68,7 +62,6 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
   const locateEventWithMaps = async () => {
     if (!selectedEvent || !selectedEvent.location) return;
     const ai = getAI();
-    if (!ai) return;
 
     setIsLocating(true);
     try {
