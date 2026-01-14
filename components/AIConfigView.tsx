@@ -91,7 +91,7 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
   const readyToUseCode = `import google.generativeai as genai
 
 # CONFIGURAÇÃO MASTER ATELIER
-API_KEY = "SUA_CHAVE_AQUI"
+API_KEY = "AIzaSyA8sW4o-DNyiZhidkR2ZhATdCxe3RZgBMU"
 genai.configure(api_key=API_KEY)
 
 # Instrução vinda do seu Editor no Site
