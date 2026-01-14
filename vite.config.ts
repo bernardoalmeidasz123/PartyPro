@@ -12,6 +12,6 @@ export default defineConfig({
   },
   define: {
     // Injetando a chave fornecida para funcionar globalmente
-    'process.env.API_KEY': JSON.stringify("AIzaSyA8sW4o-DNyiZhidkR2ZhATdCxe3RZgBMU")
+    'process.env.API_KEY': JSON.stringify("AIzaSyCUC3Q62ECe6lmqcN0DrdLR6xMBKXMjno0")
   }
 });
