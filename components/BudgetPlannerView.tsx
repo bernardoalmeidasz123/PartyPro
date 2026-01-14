@@ -27,9 +27,9 @@ const BudgetPlannerView: React.FC<BudgetPlannerViewProps> = ({ events, setEvents
       Forneça: 1. Estimativa de lucro ideal (30-40%). 2. Sugestão de 3 fornecedores genéricos para economizar 10%. 3. Alerta de risco financeiro. 
       Responda de forma executiva e curta em português.`;
 
-      // Usando Flash Lite para análise rápida e barata
+      // Modelo Lite para resposta rápida
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
+        model: 'gemini-2.5-flash-lite-preview',
         contents: prompt
       });
 

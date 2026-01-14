@@ -53,8 +53,9 @@ print("Iniciando simulação de convite para Baile de Gala...")`;
       2. Se houver um comando 'print', retorne APENAS o texto impresso.
       3. Use a variável INSTRUCAO_SISTEMA para moldar sua resposta se solicitado.`;
 
+      // Modelo Lite para interpretação rápida
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
+        model: 'gemini-2.5-flash-lite-preview',
         contents: prompt,
       });
 

@@ -44,9 +44,9 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       Local: ${selectedEvent.location}
       Instrução: Use um tom extremamente sofisticado e acolhedor.`;
 
-      // Usando Flash Lite para texto
+      // Modelo Lite para resposta rápida
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
+        model: 'gemini-2.5-flash-lite-preview',
         contents: prompt,
       });
 
@@ -54,7 +54,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, aiInviteText: text } : ev));
     } catch (error: any) {
       console.error(error);
-      alert("O Atelier não conseguiu gerar o texto. Verifique sua conexão ou cota.");
+      alert("O Atelier não conseguiu gerar o texto. Verifique sua conexão.");
     } finally {
       setIsGeneratingInvite(false);
     }
@@ -66,9 +66,8 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
     setIsLocating(true);
     try {
-      // Mapas requer modelo da série 2.5
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash", 
+        model: "gemini-2.5-flash-lite-latest", 
         contents: `Encontre a localização exata e detalhes de: "${selectedEvent.location}". Forneça o link do Google Maps.`,
         config: { 
           tools: [{ googleMaps: {} }] 

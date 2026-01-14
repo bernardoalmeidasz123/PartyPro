@@ -20,8 +20,7 @@ const AIChatHelper: React.FC = () => {
       // Uso direto da chave injetada
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       chatRef.current = ai.chats.create({
-        // Usando Flash Lite para máxima economia e velocidade (Tier Gratuito amigável)
-        model: 'gemini-flash-lite-latest',
+        model: 'gemini-2.5-flash-lite-preview', // Modelo Low-Latency
         config: {
           systemInstruction: 'Você é um planejador de eventos de elite, sofisticado, criativo e prestativo. Ajude com tendências, logística, etiqueta e design.',
         },
@@ -47,8 +46,8 @@ const AIChatHelper: React.FC = () => {
       }
     } catch (error: any) {
       console.error(error);
-      const msg = error.message?.includes('429') || error.message?.includes('quota')
-        ? '⚠️ O Atelier está com alta demanda (Cota Excedida). Aguarde um momento e tente novamente.' 
+      const msg = error.message?.includes('API Key') 
+        ? '⚠️ Erro de Sistema: Chave de API não encontrada.' 
         : 'Perdão, tive um contratempo momentâneo. Tente novamente.';
       setMessages(prev => [...prev, { role: 'model', text: msg }]);
     } finally {
@@ -67,7 +66,7 @@ const AIChatHelper: React.FC = () => {
     <div className="h-[calc(100vh-140px)] flex flex-col animate-in fade-in duration-700">
       <header className="mb-6 flex-shrink-0">
         <h2 className="text-4xl font-display text-emerald-950 font-bold">Concierge AI</h2>
-        <p className="text-slate-500 italic">Seu assistente pessoal disponível 24h para consultoria de eventos.</p>
+        <p className="text-slate-500 italic">Seu assistente pessoal ultra-rápido disponível 24h.</p>
       </header>
 
       <div className="flex-1 bg-white rounded-[48px] border border-slate-100 shadow-xl overflow-hidden flex flex-col relative">
