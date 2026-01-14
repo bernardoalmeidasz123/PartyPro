@@ -11,7 +11,7 @@ const InviteCreatorView: React.FC = () => {
   const [selectedPalette, setSelectedPalette] = useState('Esmeralda & Ouro');
   const [customPalette, setCustomPalette] = useState('');
   
-  // New States for Advanced Image Generation
+  // Configurações Nano Banana Pro
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [isEditing, setIsEditing] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
@@ -26,9 +26,8 @@ const InviteCreatorView: React.FC = () => {
     tone: 'Sofisticado'
   });
 
-  const getAI = () => {
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
-  };
+  // Inicialização centralizada com a chave do sistema
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const handleGenerate = async (type: 'text' | 'visual') => {
     if (!formData.clientName || !formData.theme) {
@@ -36,8 +35,6 @@ const InviteCreatorView: React.FC = () => {
       return;
     }
     
-    const ai = getAI();
-
     setLoading(true);
     setPreviewTab(type);
     
@@ -64,12 +61,12 @@ const InviteCreatorView: React.FC = () => {
         });
         setGeneratedContent(response.text || 'O Atelier não conseguiu redigir o texto no momento. Tente novamente.');
       } else {
-        // Visual Generation using Gemini 3 Pro Image Preview (Nano Banana Pro)
+        // Geração Visual com Nano Banana Pro (gemini-3-pro-image-preview)
         const prompt = `Hyper-realistic professional event design for "${formData.theme}". 
         The scene should reflect a high-end luxury party at ${formData.location || 'a magnificent venue'}.
         Visual details: ${formData.elements}.
         Color theme: ${paletteStr}.
-        Cinematic lighting, 8k resolution, elegant atmosphere, highly detailed.`;
+        Cinematic lighting, 8k resolution, elegant atmosphere, highly detailed, photorealistic.`;
         
         const response = await ai.models.generateContent({
           model: 'gemini-3-pro-image-preview',
@@ -77,7 +74,7 @@ const InviteCreatorView: React.FC = () => {
           config: { 
             imageConfig: { 
               aspectRatio: "16:9",
-              imageSize: imageSize // 1K, 2K, or 4K
+              imageSize: imageSize // Suporte a 1K, 2K e 4K
             } 
           }
         });
@@ -93,11 +90,11 @@ const InviteCreatorView: React.FC = () => {
           }
         }
         if (!imageFound) alert("O Atelier não conseguiu gerar a imagem. Tente novamente.");
-        setIsEditing(false); // Reset edit mode on new generation
+        setIsEditing(false); 
       }
     } catch (e: any) {
       console.error("Erro na IA:", e);
-      alert(`Erro no Atelier Digital: ${e.message || 'Verifique sua conexão.'}`);
+      alert(`O Atelier encontrou um obstáculo: ${e.message || 'Verifique a conexão.'}`);
     } finally {
       setLoading(false);
     }
@@ -105,15 +102,12 @@ const InviteCreatorView: React.FC = () => {
 
   const handleEditImage = async () => {
     if (!visualPreview || !editPrompt) return;
-    
-    const ai = getAI();
-
     setLoading(true);
 
     try {
       const base64Data = visualPreview.split(',')[1];
 
-      // Editing using Gemini 2.5 Flash Image (Nano Banana Powered)
+      // Edição com Gemini 2.5 Flash Image (Nano Banana)
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
@@ -125,7 +119,7 @@ const InviteCreatorView: React.FC = () => {
               },
             },
             {
-              text: editPrompt,
+              text: `Edit this image: ${editPrompt}. Maintain high luxury quality.`,
             },
           ],
         },

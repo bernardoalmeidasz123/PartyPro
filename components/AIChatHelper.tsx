@@ -12,12 +12,12 @@ const AIChatHelper: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll to bottom
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const initChat = () => {
     if (!chatRef.current) {
+      // Uso direto da chave do sistema
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       chatRef.current = ai.chats.create({
         model: 'gemini-3-pro-preview',
@@ -46,8 +46,7 @@ const AIChatHelper: React.FC = () => {
       }
     } catch (error: any) {
       console.error(error);
-      let errorMsg = 'Perdão, tive um contratempo momentâneo. Poderia reformular?';
-      setMessages(prev => [...prev, { role: 'model', text: errorMsg }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Perdão, tive um contratempo momentâneo. Tente novamente mais tarde.' }]);
     } finally {
       setIsLoading(false);
     }

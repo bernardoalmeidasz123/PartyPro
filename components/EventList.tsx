@@ -24,13 +24,11 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
 
-  const getAI = () => {
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
-  };
+  // Instância única da IA com chave do sistema
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const generateInviteWithAI = async () => {
     if (!selectedEvent) return;
-    const ai = getAI();
 
     setIsGeneratingInvite(true);
     try {
@@ -52,7 +50,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { ...ev, aiInviteText: text } : ev));
     } catch (error: any) {
       console.error(error);
-      alert("Falha no Atelier Digital: Verifique a conexão.");
+      alert("O Atelier não conseguiu gerar o texto. Verifique sua conexão.");
     } finally {
       setIsGeneratingInvite(false);
     }
@@ -60,7 +58,6 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
 
   const locateEventWithMaps = async () => {
     if (!selectedEvent || !selectedEvent.location) return;
-    const ai = getAI();
 
     setIsLocating(true);
     try {
@@ -81,6 +78,7 @@ const EventList: React.FC<EventListProps> = ({ events, setEvents }) => {
       } : ev));
     } catch (error: any) {
       console.error(error);
+      // Fallback para busca manual se falhar
       setEvents(prev => prev.map(ev => ev.id === selectedEvent.id ? { 
         ...ev, 
         locationMapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.location)}`
