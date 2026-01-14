@@ -58,7 +58,7 @@ const InviteCreatorView: React.FC = () => {
         
         Instrução: Integre o Local, a Hora e os Elementos Especiais organicamente no texto. O convite deve ser magnético e luxuoso.`;
 
-        // Modelo Lite para resposta rápida
+        // Modelo Lite para resposta rápida (Fast AI)
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash-lite-preview',
           contents: prompt
@@ -157,9 +157,10 @@ const InviteCreatorView: React.FC = () => {
       <header>
         <div className="flex items-center gap-3 mb-2">
            <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-widest">Estúdio de Criação</span>
+           <span className="text-[10px] font-black bg-champagne text-emerald-950 px-2 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">⚡ Fast AI</span>
         </div>
         <h2 className="text-4xl font-display text-emerald-950 font-bold">Atelier Digital</h2>
-        <p className="text-slate-500 italic">Preencha os dados e peça para a IA projetar seu evento.</p>
+        <p className="text-slate-500 italic">Preencha os dados e peça para a IA projetar seu evento (Powered by Gemini Flash).</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -239,6 +240,7 @@ const InviteCreatorView: React.FC = () => {
              <div className="text-center space-y-6 relative z-10">
                 <div className="w-16 h-16 border-4 border-champagne border-t-transparent rounded-full animate-spin mx-auto"></div>
                 <p className="font-display italic text-xl text-champagne">O Atelier está trabalhando...</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Processando com Gemini Flash</p>
              </div>
            ) : previewTab === 'text' && generatedContent ? (
              <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-700 relative z-10">

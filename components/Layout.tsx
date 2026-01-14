@@ -84,9 +84,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveView, us
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-             <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-             <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Gemini 3.0 Connected</span>
+          <div className="flex items-center gap-3 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+             <span className="text-lg">⚡</span>
+             <div className="flex flex-col">
+               <span className="text-[8px] font-black uppercase tracking-widest text-emerald-800">Fast AI Active</span>
+               <span className="text-[6px] font-bold uppercase tracking-widest text-emerald-600/60">Gemini Flash Lite</span>
+             </div>
           </div>
         </header>
 
